@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+  <title>selinux | lutia.nl</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <!--[if lt IE 9]>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv-printshiv.min.js"></script>
+  <![endif]-->
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">selinux | lutia.nl</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#selinux-quick-intro" id="toc-selinux-quick-intro">SELinux
+quick intro</a></li>
+<li><a href="#warning-and-enabling-selinux"
+id="toc-warning-and-enabling-selinux">Warning and Enabling selinux</a>
+<ul>
+<li><a href="#enable-selinux-from-a-disabled-state"
+id="toc-enable-selinux-from-a-disabled-state">Enable selinux from a
+disabled state</a></li>
+</ul></li>
+<li><a href="#what-is-selinux" id="toc-what-is-selinux">What is
+selinux</a></li>
+<li><a href="#commands-and-usage" id="toc-commands-and-usage">Commands
+and Usage</a>
+<ul>
+<li><a href="#logs" id="toc-logs">Logs</a></li>
+<li><a href="#booleans" id="toc-booleans">Booleans</a></li>
+<li><a href="#list-contexts" id="toc-list-contexts">List
+contexts</a></li>
+<li><a href="#set-contexts" id="toc-set-contexts">Set contexts</a></li>
+</ul></li>
+<li><a href="#troubleshooting"
+id="toc-troubleshooting">Troubleshooting</a>
+<ul>
+<li><a href="#verifying-selinux-problem"
+id="toc-verifying-selinux-problem">Verifying selinux problem</a></li>
+<li><a href="#exec---permission-denied"
+id="toc-exec---permission-denied">Exec - permission denied</a></li>
+<li><a href="#httpd-errors" id="toc-httpd-errors">HTTPD errors</a></li>
+<li><a href="#common-troubleshooting-tips"
+id="toc-common-troubleshooting-tips">Common troubleshooting
+tips</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="selinux-quick-intro">SELinux quick intro</h1>
+<p>This is a blog article and neither official nor verified by
+redhat.<br />
+This site documents</p>
+<p>Main information source:<br />
+- <a
+href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/sect-security-enhanced_linux-troubleshooting-fixing_problems">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/sect-security-enhanced_linux-troubleshooting-fixing_problems</a><br />
+- <a
+href="https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/chap-managing_confined_services-the_apache_http_server">https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux/7/html/selinux_users_and_administrators_guide/chap-managing_confined_services-the_apache_http_server</a></p>
+<h1 id="warning-and-enabling-selinux">Warning and Enabling selinux</h1>
+<p><strong>Never disable SELinux!</strong><br />
+It is always better to just set it to “Permisive”, which means “not
+actively blocking, only logging”. (By default SELinux is set to
+“Enforcing”, which means it blocks illegal accesses)</p>
+<p>To verify if SELinux runs you can use the <code>getenforce</code> or
+<code>sestatus</code> command. The <code>getenforce</code> command will
+return the current mode of SELinux:</p>
+<ul>
+<li><code>Disabled</code> , SELinux is completely disabled and no
+features work<br />
+</li>
+<li><code>Permissive</code> , SELinux is active but doesn’t do anything,
+it only logs if it would’ve blocked a call<br />
+</li>
+<li><code>Enforcing</code> , SELinux is active and working, it blocks
+illegal calls/accesses</li>
+</ul>
+<p>To disable SELinux temporary use the <code>setenforce 0</code>
+command.<br />
+To disable it permanently edit the <code>/etc/selinux/config</code> file
+and set the state to <code>SELINUX=permissive</code>.</p>
+<p>To enable it (as in, actively blocking illegal accesses) temporarily
+use <code>setenforce 1</code>.<br />
+To enable it permanently set <code>SELINUX=enforcing</code> in the
+<code>/etc/selinux/config</code>.</p>
+<p>The <code>setenforce</code> command only set the state until next
+reboot. You can check this with the <code>sestatus</code> command.</p>
+<h2 id="enable-selinux-from-a-disabled-state">Enable selinux from a
+disabled state</h2>
+<ol type="1">
+<li>Check if <code>getenforce</code> does NOT return
+<code>Disabled</code>. If it says Permissive/Enforcing then it is
+active, else continue.</li>
+<li>Check if the setting in <code>/etc/selinux/config</code> does NOT
+say <code>Disabled</code>. If it does, change it to
+<code>Permissive</code>.</li>
+<li>Check if there is a grub boot config that disables it
+(<code>grep -rin "selinux=0" /boot</code>), if there is use the command
+in the <code>/etc/selinux/config</code> file to enable it again</li>
+<li>Check if a file in <code>/etc/audit/rules.d/</code> does NOT exclude
+selinux avc records. If a line like
+<code>-a always,exclude -F msgtype=AVC</code> exists you HAVE TO COMMENT
+IT OUT by placing a <code>#</code> infront of the line and rebooting the
+server afterwards.</li>
+</ol>
+<p>If it was Disabled then you have to reboot to enable it again. Before
+that create the autorelabel file (<code>touch /.autorelabel</code>) and
+then restart the server. The boot may take a bit longer because SELinux
+applies the context to the filesystem again.</p>
+<p>After booting the mount options will have an additional one named
+<code>seclabel</code>, if you have strict monitorint (e.g. checkmk) then
+update the setting there to include this.</p>
+<p>If you have custom software installed (e.g. a custom .rpm package
+that installed into /opt or /srv) then you maybe have to reinstall that
+software for it to work correctly.<br />
+During software installations the SELinux labels and context will be set
+for the installed files, if selinux is disabled during the installation
+then these labels won’t be set correctly and the application maybe will
+not run after enabling selinux again afterwards.</p>
+<h1 id="what-is-selinux">What is selinux</h1>
+<p>SELinux stands for “Security Enhanced Linux” and is basically a list
+of rules and definitions that secure your server and filesystem
+accesses.<br />
+For example, there exist boolean configs for disabling certain httpd
+server features like</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">semanage</span> boolean <span class="at">-l</span> <span class="kw">|</span> <span class="fu">grep</span> httpd_can_network_connect_db</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># httpd_can_network_connect_db   (on   ,   on)  Allow httpd to can network connect db</span></span></code></pre></div>
+<p>and there are also special attributes on files that show what exactly
+they are for</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-Zahl</span> /var/www/html/index.php</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># -rw-r--r--. 1 root root **unconfined_u:object_r:httpd_sys_content_t:s0** 7.1K Feb 26 17:40 /var/www/html/index.php</span></span></code></pre></div>
+<p>There are also contexts on users and processes. These can be viewed
+with the <code>-Z</code> flag, for example <code>ps -Zex</code> or
+<code>ls -Z</code> or <code>id -Z</code>.</p>
+<p>According to the documentation, the following daemons are protected
+by the default targeted policy:
+dhcpd,httpd,named,nscd,ntpd,portmap,snmpd,squid,syslogd.</p>
+<h1 id="commands-and-usage">Commands and Usage</h1>
+<p>To see the state of selinux you can use <code>getenforce</code> or
+<code>sestatus</code>.<br />
+To enable or disable (<code>Enforcing</code> or <code>Permissive</code>)
+selinux you can use the <code>setenforce</code> command with either a 0
+(Permissive) or 1 (Enforcing) behind it.<br />
+To set the selinux state on boot (=permanent) edit the
+<code>/etc/selinux/config</code> file.</p>
+<h2 id="logs">Logs</h2>
+<p>The logs for selinux are stored in
+<code>/var/log/audit/audit.log</code>.<br />
+To search for violations you can use <code>ausearch -m avc</code>.<br />
+To get a summary of violations you can use
+<code>aureport -a</code>.<br />
+The main type of selinux log you want is called <code>AVC</code>. This
+is the type that reports failed access because of selinux enforcing
+policies.</p>
+<h2 id="booleans">Booleans</h2>
+<p>To list all booleans (=configs of selinux) you can use
+<code>semanage boolean -l</code>. The first value of the output is the
+current state, the second one is the default state. To install the
+semanage command (if missing) install
+<code>policycoreutils-python</code> for RHEL7 or
+<code>policycoreutils-python-utils</code> for RHEL8/9.<br />
+Another command for this is <code>getsebool -a</code>.<br />
+To set a bool you use
+<code>setsebool httpd_can_network_connect_db on</code> (or off). To make
+it permanent between reboots use the <code>-P</code> flag, example:
+<code>setsebool -P httpd_can_network_connect_db on</code>.</p>
+<h2 id="list-contexts">List contexts</h2>
+<p>To view contexts for files or processes you can use the
+<code>-Z</code> flag.</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ps</span> <span class="at">-Ze</span> <span class="kw">|</span> <span class="fu">grep</span> httpd</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># system_u:system_r:httpd_t:s0      19177 ?        00:02:41 httpd</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">ls</span> <span class="at">-Z</span> /var/www/html/index.php</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co"># unconfined_u:object_r:httpd_sys_content_t:s0 index.php</span></span></code></pre></div>
+<p>If you move a file with <code>mv</code> it moves the selinux context
+with it. (=keep context)<br />
+If you copy a file with <code>cp</code> the file will have the context
+of the target folder. (=refresh context)<br />
+If you want to copy a file with the same context use the
+<code>cp --preserve=context</code> flag.</p>
+<h2 id="set-contexts">Set contexts</h2>
+<p>To temporary change the type context of a file (until a relabel) use
+<code>chcon</code>:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chcon</span> <span class="at">-t</span> bin_t /bin/myapp</span></code></pre></div>
+<p>To permanently change it use the <code>semanage fcontext</code>
+command:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">semanage</span> fcontext <span class="at">-a</span> <span class="at">-t</span> bin_t /bin/myapp</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">restorecon</span> <span class="at">-v</span> /bin/myapp</span></code></pre></div>
+<p>To view more help with the semanage command you can use
+<code>man semanage-fcontext</code>.</p>
+<h1 id="troubleshooting">Troubleshooting</h1>
+<h2 id="verifying-selinux-problem">Verifying selinux problem</h2>
+<p>To make sure that your problem occurs because of SELinux:</p>
+<ul>
+<li>If <code>getenforce</code> returns <code>Enforcing</code> then
+disable it with <code>setenforce 0</code> and check if the problem
+persists. If the problem is now gone then it is an SELinux problem. If
+the problem still occurs then it is NOT an SELinux problem.<br />
+</li>
+<li>If <code>getenforce</code> returns <code>Permissive</code> or
+<code>Disabled</code> then the problem is not because of SELinux.</li>
+</ul>
+<h2 id="exec---permission-denied">Exec - permission denied</h2>
+<p>Example error:
+<code>exec /opt/bin/file - Permission denied</code>.<br />
+This is a common error for systemd services that use custom
+applications, e.g. software installed in /srv or a /home
+directory.<br />
+This problem occurs because the binary file (in this case the file named
+<code>/opt/bin/file</code>) has a type that is not
+<code>bin_t</code>.</p>
+<p>Check if this problem is the same as yours:</p>
+<ul>
+<li><code>ls -ahl /opt/bin/file</code> shows that the user that wants to
+start the executable has read&amp;execute permissions
+(e.g. <code>-rwxr-xr-x</code>)<br />
+</li>
+<li><code>ls -Z /opt/bin/file</code> shows the type as not
+<code>bin_t</code>
+(e.g. <code>system_u:object_r:unconfined_t:s0</code>)</li>
+</ul>
+<p>If the selinux type of the file is not bin_t then you can use the
+following command to set it temporary:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chcon</span> <span class="at">-t</span> bin_t /opt/bin/file</span></code></pre></div>
+<p>Try to restart the application and check if it works with the new
+context.</p>
+<p>If it works then you can now set the new context permanently.<br />
+First you set a custom context with the <code>semanage fcontext</code>
+command (-a adds a new entry) and then load this context with the
+<code>restorecon</code> command.<br />
+This way of setting the context makes it survive a filesystem
+relabel.<br />
+WARNING: You have to use the full path with the semanage command!</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Create a new context for the file</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">semanage</span> fcontext <span class="at">-a</span> <span class="at">-t</span> bin_t /opt/bin/file</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the new context for the file</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">restorecon</span> <span class="at">-v</span> /opt/bin/file</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Output:</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Relabeled /opt/bin/file from unconfined_u:object_r:user_home_t:s0 to unconfined_u:object_r:bin_t:s0</span></span></code></pre></div>
+<p>To see all your custom contexts you can use the
+<code>semanage fcontext -C -l</code> command.</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">semanage</span> fcontext <span class="at">-C</span> <span class="at">-l</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co"># SELinux fcontext                                   type               Context</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co"># /opt/bin/file                                      all files          system_u:object_r:bin_t:s0</span></span></code></pre></div>
+<h2 id="httpd-errors">HTTPD errors</h2>
+<p>By default the standard apache2 webserver, called httpd, is not
+allowed to do much.<br />
+This is the cause of many errors, and there are many fixes for all the
+small problems.</p>
+<p><strong>database fails to connect</strong></p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_can_network_connect_db on</span></code></pre></div>
+<p><strong>connection to remote host fails</strong></p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_can_network_connect on</span></code></pre></div>
+<p><strong>httpd reverse proxy not working</strong></p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_can_network_relay on</span></code></pre></div>
+<p><strong>php is not working</strong></p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_builtin_scripting on</span></code></pre></div>
+<p><strong>forbidden / can’t read file</strong><br />
+Make sure the folder and files of your web directory
+(e.g. <code>/var/www/html</code>) have the correct selinux
+context.<br />
+To set it to a context that the httpd webserver can read:</p>
+<div class="sourceCode" id="cb13"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chcon</span> <span class="at">-R</span> <span class="at">-t</span> httpd_sys_content_t /var/www/html</span></code></pre></div>
+<p>(This type is the default of the web folder if you use
+restorecon)</p>
+<p><strong>can’t write file</strong><br />
+To let the apache user write to a file you have to set a different
+context for your web folder (e.g. <code>/var/www/html</code>) like
+this:</p>
+<div class="sourceCode" id="cb14"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chcon</span> <span class="at">-R</span> <span class="at">-t</span> httpd_sys_rw_content_t /var/www/html</span></code></pre></div>
+<p>Then enable the service to write to files with:</p>
+<div class="sourceCode" id="cb15"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_anon_write on</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">setsebool</span> <span class="at">-P</span> httpd_sys_script_anon_write on</span></code></pre></div>
+<p>Also make sure that the folder is owned by the user
+<code>apache</code> with:</p>
+<div class="sourceCode" id="cb16"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">chown</span> <span class="at">-R</span> apache:apache /var/www/html</span></code></pre></div>
+<h2 id="common-troubleshooting-tips">Common troubleshooting tips</h2>
+<p>The command <code>ausearch -m avc</code> or <code>aureport -a</code>
+shows you violations where selinux blocked access to something.<br />
+With these commands you can check what process tried to access/write to
+what file/function.<br />
+Make sure that the process that runs
+(<code>ps -Ze | grep myprocess</code>) has the correct permission to
+access the ressource (<code>ls -Zahl /opt/myapp</code>).</p>
+<p>You could also use the <code>audit2why</code> command to get a nice
+description of why an access was denied like this:</p>
+<div class="sourceCode" id="cb17"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">audit2why</span> <span class="op">&lt;</span> /var/log/audit/audit.log</span></code></pre></div>
+<p>For application specific troubleshooting you can check the second
+link at the top of this page for a redhat documentation about specific
+services and their booleans / contexts.</p>
+</body>
+</html>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>pandoc | lutia.nl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+<style>
+.c{
+  color: #797979;
+}
+</style>
+</head>
+<body>
+<h1>Converting markdown to pdf with pandoc</h1>
+
+<ul>
+<li><a href="#installation">Installation</a></li>
+<li><a href="#convert">Converting</a></li>
+<li><a href="#pdfexample">Example md to pdf</a></li>
+<li><a href="#pdfexplanation">Explaining the example input file</a></li>
+<li><a href="#ppexample">Generate Presentations with pandoc</a></li>
+</ul>
+
+<p>With the linux commandline tool <span>pandoc</span> you can easily generate a nice looking PDF file from any other format you want.</p>
+
+<h3 id="installation">Installation</h3>
+<p>
+For windows users there exists a .msi installer on <a href="https://pandoc.org/installing.html" target="_blank">https://pandoc.org/installing.html</a>.<br>
+For linux users you can run the following commands:
+<pre>
+sudo apt-get install texlive-xetex fonts-liberation
+wget https://github.com/jgm/pandoc/releases/download/2.16.2/pandoc-2.16.2-1-amd64.deb
+sudo dpkg -i pandoc-2.16.2-1-amd64.deb
+</pre>
+texlive-xetex is a pdf engine that makes amazing .pdf files.<br>
+fonts-liberation contains windows-like fonts which are remade and open source.<br>
+Installing by binary from github makes it always up to date because the debian repo version is .14 versions behind and has many problems that are long fixed.
+<br>
+Now you can run it with the <span>pandoc</span> example commands below.
+</p>
+
+<h3 id="convert">Converting</h3>
+<p>
+To render a markdown file into html:
+<pre>
+pandoc workshopdoku.md -o workshop.html
+</pre>
+<br>
+To convert to pdf I recommend using the xelatex pdf engine:
+<pre>
+pandoc workshopdoku.md --pdf-engine=xelatex -o workshop.pdf
+</pre>
+For more files that can be converted visit their github: <a target="_blank" href="https://github.com/jgm/pandoc">https://github.com/jgm/pandoc</a>.<br>
+There are many more tips and settings which can all be found in the <a href="https://pandoc.org/MANUAL.html" target="_blank">https://pandoc.org/MANUAL.html</a>.
+</p>
+
+<h3 id="pdfexample">Example md to pdf</h3>
+<p>
+The example file, which is the source of this convertion, can be downloaded <a target="_blank" href="files/pandoc_md.txt">here</a>.<br>
+To convert it the following command is used:
+<pre>
+pandoc pandoc_md.txt --pdf-engine=xelatex -o pandoc_pdf.pdf
+</pre>
+The pdf that was created can be found <a target="_blank" href="files/pandoc_pdf.pdf">here</a>.<br>
+If your browser supports loading PDFs via iframe tags it can also be viewed here:
+<iframe src="files/pandoc_pdf.pdf" width="100%" height="700px">
+</iframe>
+</p>
+
+<h3 id="pdfexplanation">Explaining the example input file</h3>
+<p>
+This is the full input file. Every <span>//</span> after a line means it's a comment about what this line does.
+<pre>
+---
+title: Example Pandoc Document
+author: Me, Myself and I
+date: 10.11.2021
+toc: true   <span class="c">// If a "Table of content" should be generated</span>
+numbersections: true <span class="c">// If the headings should be numbered, e.g. "1.2 Header"</span>
+geometry: margin=3cm <span class="c">// The gap between text and paper-edge</span>
+urlcolor: blue
+mainfont: LiberationSans
+header-includes: |
+    \usepackage{fancyhdr}
+    \pagestyle{fancy}
+    \lfoot{Generated with pandoc} <span class="c">// Left foot note</span>
+    \rfoot{Seite \thepage} <span class="c">// Right foot note</span>
+---
+
+\newpage <span class="c">// Makes the text after this appear on a new page</span>
+<span class="c">// The Heading above will generate a "Table of Content"</span>
+<span class="c">// This newpage sperates content from table of content</span>
+
+
+# Header 1
+
+## Header 2
+
+This is content. Now an image:
+
+![Utage from Arknights](test.png "test.png image at 50% width"){ width=50% }
+
+
+
+The next Heading will be on the next page because i write a \\newpage after this sentence.
+
+\newpage
+
+# Header 3
+You can do all things markdown provides, like _italic_ and **bold** and code with 4 spaces
+
+    echo "Hello World"
+    Hello World
+
+Now comes a "list of figures" with \\listoffigures:
+
+\listoffigures
+
+</pre>
+</p>
+
+
+<h3 id="ppexample">Generate presentations with pandoc</h3>
+<p>
+With pandoc you can also generate powerpoint-like web presentations from a text file.<br>
+There are multiple designs, the commands are:
+<pre>
+pandoc -s --mathml -i -t dzslides SLIDES -o example16a.html
+
+pandoc -s --webtex -i -t slidy SLIDES -o example16b.html
+
+pandoc -s --mathjax -i -t revealjs SLIDES -o example16d.html
+</pre>
+You can also make them "self-contained" by adding a <span>--self-contained</span> before the <i>-s</i>. This makes the .html output file +3MB in size but it can be used offline as all the CSS and JS files are inside this one file.<br>
+<br>
+An example for the last "mathjax and revealjs" one:<br>
+The input file can be found <a href="files/pandoc_slides.txt" target="_blank">here</a> or below:
+
+<pre>
+---
+title: Example
+--background-image: https://img3.gelbooru.com/images/7b/fe/7bfed13e0c310bc5fb1de167ffe564bc.jpg
+title-slide-attributes:
+    data-background-image: https://img3.gelbooru.com/images/70/53/7053e91ecc3930e12131300b42d2ae64.jpg
+    data-background-size: contain
+---
+
+# Slide One
+
+- Press s to open the presenter view in a popup window
+- There will be notes there if you are on this slide
+
+::: notes
+
+This is my note.
+
+- It can contain Markdown
+- like this list
+
+:::
+
+# Slide Two
+
+Pandoc is:
+
+- Easy to generate
+- Can run in every browser
+- No lag or delay
+
+# Slide Three
+
+Now a table:
+
+:::::::::::::: {.columns}
+::: {.column width="40%"}
+Money  
+Time
+:::
+::: {.column width="60%"}
+Not much  
+Even less
+:::
+::::::::::::::
+
+# Conclusion
+
+Pandoc is awesome!
+
+. . .
+
+Thanks for listening! 
+
+</pre>
+The command used was:
+<pre>
+pandoc -s --mathjax -i -t revealjs pandoc_slides.txt -o pandoc_slides.html
+</pre>
+
+The output presentation that was created can be found <a target="_blank" href="files/pandoc_slides.html">here</a>.<br>
+
+If your browser supports iframe tags it can also be viewed here:
+<iframe src="files/pandoc_slides.html" width="100%" height="700px">
+</iframe>
+</p>
+
+
+<br><br><br>
+</body>
+</html>
+

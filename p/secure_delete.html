@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>deletion | lutia.nl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<h1>Delete securely with linux</h1>
+
+<ul>
+<li><a href="#problem">The problem with formating</a></li>
+<li><a href="#file">Delete single file</a></li>
+<li><a href="#hddusb">Format HDD / USB</a></li>
+<li><a href="#ssd">Format SSD</a></li>
+<li><a href="#tips">Tips for the future</a></li>
+</ul>
+
+<p>
+All of these tools should be preinstalled on a typical linux desktop (example Fedora, MX Linux, Manjaro).<br>
+</p>
+
+<h3 id="problem">The problem with formating</h3>
+<p>
+Flash-based media (SSD) save data multiple times and move it without deleting the old version.<br>
+<br>
+This is thanks to Wear Leveling (<a href="https://en.wikipedia.org/wiki/Wear_leveling" target="_blank">https://en.wikipedia.org/wiki/Wear_leveling</a>) and Write Amplification (<a href="https://en.wikipedia.org/wiki/Write_amplification" target="_blank">https://en.wikipedia.org/wiki/Write_amplification</a>).<br>
+This also means that, if you overwrite your SSD with all 0, you are going to write way more data inside of the SSD than only 1 time the size of it. This makes the SSD die more quickly. This is also the reason why "Defragmentation" is not recommended for SSDs.<br>
+<br>
+Paper about the topic of multiple file copies on flash drives: <a href="https://www.usenix.org/legacy/events/fast11/tech/full_papers/Wei.pdf" target="_blank">https://www.usenix.org/legacy/events/fast11/tech/full_papers/Wei.pdf</a>
+</p>
+
+<h3 id="file">Delete single file</h3>
+<p>
+The easiest way to safely delete a single file is the <span>shred</span> command.<br>
+By default it overwrites the file 3 times. To also delete the file after overwriting it run the command like this: <span>shred -vu file.txt</span><br>
+-v makes it verbose, -u makes it deallocate and remove the file after overwriting.<br>
+<br>
+BUT: It is recommended to, if you modified the file on your drive, to format the whole drive instead. The internal wear leveling could've copied the file multiple times, which makes it recoverable with special tools.
+</p>
+
+<h3 id="hddusb">Format HDD / USB</h3>
+<p>
+To format a HDD or an USB you can use the <span>dd</span> or <span>badblocks</span> command.<br>
+<br>
+To find out which drive is the one you want to overwrite use the <span>fdisk -l</span> command.<br>
+This shows you all the connected devices and their size. The first drive is <span>/dev/sda</span>, the second <span>/dev/sdb</span> and so on. The one you want to format is probably the last one in the list as it is sorted by time of connection.<br>
+The fdisk -l command also shows you the logical and physical <span>Sector size</span>. You have to use this in the <span>bs=4096</span> argument of the dd command. It is recommended to replace the number with the logical sector size of the fdisk output.<br>
+<br>
+Important notice: Using urandom as a source for dd limits the speed of the formating process. For me, with an Intel-i5 on manjaro, the urandom source was only producing random output at 40mb/s. It was actually faster to run badblocks with it's 4-times overwriting than dd with urandom once.<br>
+<br>
+If you are sure you have the name of the disk you want to format you can run the command itself. dd overwrites the target with the source of your choice, either all 0s or random data. badblocks overwrites the target with 4 passes of fixed data (not random).<br>
+This means badblocks takes longer than dd to complete, but has 4 overwrites in total which makes it a bit better. (Ofcourse you can also run <span>dd</span> 4 times)<br>
+<br>
+To overwrite your device with dd all 0s use the following command and replace <span>sdX</span> with your device from fdisk -l (example <span>sdb</span>):<br>
+<pre>
+dd if=/dev/zero of=/dev/sdX bs=4096 status=progress
+</pre>
+To overwrite your device with dd and random data use the following command:<br>
+<pre>
+dd if=/dev/urandom of=/dev/sdX bs=4096 status=progress
+</pre>
+To overwrite your device with badblocks use the following command:<br>
+<pre>
+badblocks -wsv /dev/sdX
+</pre>
+<br>
+For a more thorough explanation check the archlinux article for this topic:<a href="https://wiki.archlinux.org/title/Securely_wipe_disk" target="_blank">https://wiki.archlinux.org/title/Securely_wipe_disk</a>
+</p>
+
+<h3 id="ssd">Format SSD</h3>
+<p>
+Warning: As mentioned at the <a href="#problem">Problems</a> section it is not recommended to overwrite your SSD with random or fixed data. Your SSD should also be connected via ATA/SATA cable and NOT via USB. Also make sure that your SSD is not mounted during the format process.
+<br>
+To format an SSD you should use the ATA Secure Erase command.<br>
+To do this follow the guide from the archlinux wiki: <a href="https://wiki.archlinux.org/title/Solid_state_drive/Memory_cell_clearing" target="_blank">https://wiki.archlinux.org/title/Solid_state_drive/Memory_cell_clearing</a>.<br>
+</p>
+
+<h3 id="tips">Tips for the future</h3>
+<p>
+As you can read in the archlinux article from above it is no easy task to fully erase an SSD and be sure that all the data is gone.<br>
+<br>
+I recommend: Encrypt your drive itself (with for example veracrypt or cryptsetup).<br>
+<br>
+The recovery tools for deleted files search data that is still on the disk. If you encrypt your data it is basically unrecoverable as they would need the key to decrypt it aswell. Without the key they don't know if the data is garbage or actually an encrypted file.<br>
+<br>
+This protects you from someone finding your USB in the trash and checking whats on it: Without the decryption key they can't read the data. This removes the need for thorough erasure and cleaning of old drives as one single wipe is enough to ruin everything.<br>
+Then you just have to delete the key and your data is gone.
+</p>
+
+<br><br><br>
+</body>
+</html>
+

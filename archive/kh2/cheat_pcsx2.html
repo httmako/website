@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>How to cheat in PCSX2 | lutia.nl</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h2>How to cheat in PCSX2</h2>
+    
+    <p>The screenshots on this page are outdated due to the new PCSX2 UI</p>
+    <p>This page will guide you through the whole process of creating cheats.</p>
+    <p>First, enable them by clicking on System->Enable Cheats</p>
+    <img alt="" src="article_pictures/CPS_EnableCheats.png">
+    <p>Cheats are stored in a .pnach file. These cheat files are stored in "Documents/PCSX2/Cheats/cheat.pnach".<br>
+    The Name of the .pnach file is the "CRC" of your game. To find your games CRC you just have to enable the console (Misc->Open Console) and start a game.</p>
+    <img alt="" src="article_pictures/CPS_ShowConsole.png">
+    <p>You will see the ID after starting the game in the console.:</p>
+    <img alt="" src="article_pictures/CPS_Console.png">
+    <br><br>
+    <p>Now you can rename your .pnach file to your CRC, in my case my file would be called "FAF99301.pnach".<br>
+    The first 2 lines of your cheat file should contain the name of your game and a comment for it, mine is for example "Kingdom Hearts 2 Final Mix" and the comment is "Cheats for KH2FM". After these 2 lines you can add all your cheats.<br>
+    Cheats are in the format of patch=1,EE,Code#1, extended,Code#2 and comments can be made with //.</p>
+    <img alt="" src="article_pictures/CPS_Pnach.png">
+	<br><br>
+    Have fun!
+	<br><br>
+</body>
+</html>

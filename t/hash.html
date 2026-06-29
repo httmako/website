@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>hash | lutia.nl</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+table {width:90%; max-width:90%;}
+td:nth-child(even) input {width:500px; max-width:90%;}
+</style>
+</head>
+<body>
+<textarea placeholder="input here" id="input" name="input" cols="35" rows="1" autofocus></textarea>
+<br><br>
+<table>
+<tr>
+<td><label for="sha1">SHA-1</label></td>
+<td><input id="sha1"></td>
+</tr>
+<tr>
+<td><label for="sha256">SHA-256</label></td>
+<td><input id="sha256"></td>
+</tr>
+<tr>
+<td><label for="sha512">SHA-512</label></td>
+<td><input id="sha512"></td>
+</tr>
+<tr>
+<td><label for="md5">md5</label></td>
+<td><input id="md5"></td>
+</tr>
+<tr>
+<td><label for="crc32">crc32</label></td>
+<td><input id="crc32"></td>
+</tr>
+<tr>
+<td><label for="whirlpool">whirlpool</label></td>
+<td><input id="whirlpool"></td>
+</tr>
+<tr>
+<td><label for="tobase">To Base64</label></td>
+<td><input id="tobase"></td>
+</tr>
+<tr>
+<td><label for="frombase">From Base64</label></td>
+<td><input id="frombase"></td>
+</tr>
+<tr>
+<td><label for="tobaseu">To Base64 (unicode)</label></td>
+<td><input id="tobaseu"></td>
+</tr>
+<tr>
+<td><label for="frombaseu">From Base64 (unicode)</label></td>
+<td><input id="frombaseu"></td>
+</tr>
+
+<tr>
+<td><label for="touri">URI Encode</label></td>
+<td><input id="touri"></td>
+</tr>
+<tr>
+<td><label for="fromuri">URI Decode</label></td>
+<td><input id="fromuri"></td>
+</tr>
+<tr>
+<td><label for="touriall">URI Encode ALL</label></td>
+<td><input id="touriall"></td>
+</tr>
+<tr>
+<td><label for="fromuriall">URI Decode ALL</label></td>
+<td><input id="fromuriall"></td>
+</tr>
+
+<tr>
+<td><label for="tohex">To Hex</label></td>
+<td><input id="tohex"></td>
+</tr>
+<tr>
+<td><label for="fromhex">From Hex</label></td>
+<td><input id="fromhex"></td>
+</tr>
+<tr>
+<td><label for="tobin">To Binary</label></td>
+<td><input id="tobin"></td>
+</tr>
+<tr>
+<td><label for="frombin">From Binary</label></td>
+<td><input id="frombin"></td>
+</tr>
+
+</table>
+<br>
+<b>Do not use hashes for passwords! Use (for example) bcrypt or argon2</b>
+</body>
+<script>
+/*
+  MD4
+  Adler32?
+  Tiger
+  RIPEMD-160
+  Snefru
+  GOST
+*/
+async function createHashes(){
+  let text = document.getElementById("input").value;
+  document.getElementById("sha1").value = await sha1(text);
+  document.getElementById("sha256").value = await sha256(text);
+  document.getElementById("sha512").value = await sha512(text);
+  document.getElementById("md5").value = md5(text);
+  document.getElementById("crc32").value = crc32(text);
+  document.getElementById("whirlpool").value = Whirlpool(text);
+  createBase64(text);
+  createURIencode(text);
+  document.getElementById("tohex").value = HexEncode(text);
+  document.getElementById("fromhex").value = HexDecode(text);
+  document.getElementById("tobin").value = ToBinary(text);
+  document.getElementById("frombin").value = FromBinary(text);
+}
+
+/////////////////////
+// SHA 1, 256, 512 //
+/////////////////////
+
+async function sha1(text) {
+  const msgUint8 = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-1', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function sha256(text) {
+  const msgUint8 = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+async function sha512(text) {
+  const msgUint8 = new TextEncoder().encode(text);
+  const hashBuffer = await crypto.subtle.digest('SHA-512', msgUint8);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
+/////////
+// MD5 //
+/////////
+
+function md5(string){
+/* Source: http://www.webtoolkit.info/ */
+	function RotateLeft(lValue, iShiftBits) {
+		return (lValue<<iShiftBits) | (lValue>>>(32-iShiftBits));
+	}
+ 
+	function AddUnsigned(lX,lY) {
+		var lX4,lY4,lX8,lY8,lResult;
+		lX8 = (lX & 0x80000000);
+		lY8 = (lY & 0x80000000);
+		lX4 = (lX & 0x40000000);
+		lY4 = (lY & 0x40000000);
+		lResult = (lX & 0x3FFFFFFF)+(lY & 0x3FFFFFFF);
+		if (lX4 & lY4) {
+			return (lResult ^ 0x80000000 ^ lX8 ^ lY8);
+		}
+		if (lX4 | lY4) {
+			if (lResult & 0x40000000) {
+				return (lResult ^ 0xC0000000 ^ lX8 ^ lY8);
+			} else {
+				return (lResult ^ 0x40000000 ^ lX8 ^ lY8);
+			}
+		} else {
+			return (lResult ^ lX8 ^ lY8);
+		}
+ 	}
+ 
+ 	function F(x,y,z) { return (x & y) | ((~x) & z); }
+ 	function G(x,y,z) { return (x & z) | (y & (~z)); }
+ 	function H(x,y,z) { return (x ^ y ^ z); }
+	function I(x,y,z) { return (y ^ (x | (~z))); }
+ 
+	function FF(a,b,c,d,x,s,ac) {
+		a = AddUnsigned(a, AddUnsigned(AddUnsigned(F(b, c, d), x), ac));
+		return AddUnsigned(RotateLeft(a, s), b);
+	};
+ 
+	function GG(a,b,c,d,x,s,ac) {
+		a = AddUnsigned(a, AddUnsigned(AddUnsigned(G(b, c, d), x), ac));
+		return AddUnsigned(RotateLeft(a, s), b);
+	};
+ 
+	function HH(a,b,c,d,x,s,ac) {
+		a = AddUnsigned(a, AddUnsigned(AddUnsigned(H(b, c, d), x), ac));
+		return AddUnsigned(RotateLeft(a, s), b);
+	};
+ 
+	function II(a,b,c,d,x,s,ac) {
+		a = AddUnsigned(a, AddUnsigned(AddUnsigned(I(b, c, d), x), ac));
+		return AddUnsigned(RotateLeft(a, s), b);
+	};
+ 
+	function ConvertToWordArray(string) {
+		var lWordCount;
+		var lMessageLength = string.length;
+		var lNumberOfWords_temp1=lMessageLength + 8;
+		var lNumberOfWords_temp2=(lNumberOfWords_temp1-(lNumberOfWords_temp1 % 64))/64;
+		var lNumberOfWords = (lNumberOfWords_temp2+1)*16;
+		var lWordArray=Array(lNumberOfWords-1);
+		var lBytePosition = 0;
+		var lByteCount = 0;
+		while ( lByteCount < lMessageLength ) {
+			lWordCount = (lByteCount-(lByteCount % 4))/4;
+			lBytePosition = (lByteCount % 4)*8;
+			lWordArray[lWordCount] = (lWordArray[lWordCount] | (string.charCodeAt(lByteCount)<<lBytePosition));
+			lByteCount++;
+		}
+		lWordCount = (lByteCount-(lByteCount % 4))/4;
+		lBytePosition = (lByteCount % 4)*8;
+		lWordArray[lWordCount] = lWordArray[lWordCount] | (0x80<<lBytePosition);
+		lWordArray[lNumberOfWords-2] = lMessageLength<<3;
+		lWordArray[lNumberOfWords-1] = lMessageLength>>>29;
+		return lWordArray;
+	};
+ 
+	function WordToHex(lValue) {
+		var WordToHexValue="",WordToHexValue_temp="",lByte,lCount;
+		for (lCount = 0;lCount<=3;lCount++) {
+			lByte = (lValue>>>(lCount*8)) & 255;
+			WordToHexValue_temp = "0" + lByte.toString(16);
+			WordToHexValue = WordToHexValue + WordToHexValue_temp.substr(WordToHexValue_temp.length-2,2);
+		}
+		return WordToHexValue;
+	};
+ 
+	function Utf8Encode(string) {
+		string = string.replace(/\r\n/g,"\n");
+		var utftext = "";
+ 
+		for (var n = 0; n < string.length; n++) {
+ 
+			var c = string.charCodeAt(n);
+ 
+			if (c < 128) {
+				utftext += String.fromCharCode(c);
+			}
+			else if((c > 127) && (c < 2048)) {
+				utftext += String.fromCharCode((c >> 6) | 192);
+				utftext += String.fromCharCode((c & 63) | 128);
+			}
+			else {
+				utftext += String.fromCharCode((c >> 12) | 224);
+				utftext += String.fromCharCode(((c >> 6) & 63) | 128);
+				utftext += String.fromCharCode((c & 63) | 128);
+			}
+ 
+		}
+ 
+		return utftext;
+	};
+ 
+	var x=Array();
+	var k,AA,BB,CC,DD,a,b,c,d;
+	var S11=7, S12=12, S13=17, S14=22;
+	var S21=5, S22=9 , S23=14, S24=20;
+	var S31=4, S32=11, S33=16, S34=23;
+	var S41=6, S42=10, S43=15, S44=21;
+ 
+	string = Utf8Encode(string);
+ 
+	x = ConvertToWordArray(string);
+ 
+	a = 0x67452301; b = 0xEFCDAB89; c = 0x98BADCFE; d = 0x10325476;
+ 
+	for (k=0;k<x.length;k+=16) {
+		AA=a; BB=b; CC=c; DD=d;
+		a=FF(a,b,c,d,x[k+0], S11,0xD76AA478);
+		d=FF(d,a,b,c,x[k+1], S12,0xE8C7B756);
+		c=FF(c,d,a,b,x[k+2], S13,0x242070DB);
+		b=FF(b,c,d,a,x[k+3], S14,0xC1BDCEEE);
+		a=FF(a,b,c,d,x[k+4], S11,0xF57C0FAF);
+		d=FF(d,a,b,c,x[k+5], S12,0x4787C62A);
+		c=FF(c,d,a,b,x[k+6], S13,0xA8304613);
+		b=FF(b,c,d,a,x[k+7], S14,0xFD469501);
+		a=FF(a,b,c,d,x[k+8], S11,0x698098D8);
+		d=FF(d,a,b,c,x[k+9], S12,0x8B44F7AF);
+		c=FF(c,d,a,b,x[k+10],S13,0xFFFF5BB1);
+		b=FF(b,c,d,a,x[k+11],S14,0x895CD7BE);
+		a=FF(a,b,c,d,x[k+12],S11,0x6B901122);
+		d=FF(d,a,b,c,x[k+13],S12,0xFD987193);
+		c=FF(c,d,a,b,x[k+14],S13,0xA679438E);
+		b=FF(b,c,d,a,x[k+15],S14,0x49B40821);
+		a=GG(a,b,c,d,x[k+1], S21,0xF61E2562);
+		d=GG(d,a,b,c,x[k+6], S22,0xC040B340);
+		c=GG(c,d,a,b,x[k+11],S23,0x265E5A51);
+		b=GG(b,c,d,a,x[k+0], S24,0xE9B6C7AA);
+		a=GG(a,b,c,d,x[k+5], S21,0xD62F105D);
+		d=GG(d,a,b,c,x[k+10],S22,0x2441453);
+		c=GG(c,d,a,b,x[k+15],S23,0xD8A1E681);
+		b=GG(b,c,d,a,x[k+4], S24,0xE7D3FBC8);
+		a=GG(a,b,c,d,x[k+9], S21,0x21E1CDE6);
+		d=GG(d,a,b,c,x[k+14],S22,0xC33707D6);
+		c=GG(c,d,a,b,x[k+3], S23,0xF4D50D87);
+		b=GG(b,c,d,a,x[k+8], S24,0x455A14ED);
+		a=GG(a,b,c,d,x[k+13],S21,0xA9E3E905);
+		d=GG(d,a,b,c,x[k+2], S22,0xFCEFA3F8);
+		c=GG(c,d,a,b,x[k+7], S23,0x676F02D9);
+		b=GG(b,c,d,a,x[k+12],S24,0x8D2A4C8A);
+		a=HH(a,b,c,d,x[k+5], S31,0xFFFA3942);
+		d=HH(d,a,b,c,x[k+8], S32,0x8771F681);
+		c=HH(c,d,a,b,x[k+11],S33,0x6D9D6122);
+		b=HH(b,c,d,a,x[k+14],S34,0xFDE5380C);
+		a=HH(a,b,c,d,x[k+1], S31,0xA4BEEA44);
+		d=HH(d,a,b,c,x[k+4], S32,0x4BDECFA9);
+		c=HH(c,d,a,b,x[k+7], S33,0xF6BB4B60);
+		b=HH(b,c,d,a,x[k+10],S34,0xBEBFBC70);
+		a=HH(a,b,c,d,x[k+13],S31,0x289B7EC6);
+		d=HH(d,a,b,c,x[k+0], S32,0xEAA127FA);
+		c=HH(c,d,a,b,x[k+3], S33,0xD4EF3085);
+		b=HH(b,c,d,a,x[k+6], S34,0x4881D05);
+		a=HH(a,b,c,d,x[k+9], S31,0xD9D4D039);
+		d=HH(d,a,b,c,x[k+12],S32,0xE6DB99E5);
+		c=HH(c,d,a,b,x[k+15],S33,0x1FA27CF8);
+		b=HH(b,c,d,a,x[k+2], S34,0xC4AC5665);
+		a=II(a,b,c,d,x[k+0], S41,0xF4292244);
+		d=II(d,a,b,c,x[k+7], S42,0x432AFF97);
+		c=II(c,d,a,b,x[k+14],S43,0xAB9423A7);
+		b=II(b,c,d,a,x[k+5], S44,0xFC93A039);
+		a=II(a,b,c,d,x[k+12],S41,0x655B59C3);
+		d=II(d,a,b,c,x[k+3], S42,0x8F0CCC92);
+		c=II(c,d,a,b,x[k+10],S43,0xFFEFF47D);
+		b=II(b,c,d,a,x[k+1], S44,0x85845DD1);
+		a=II(a,b,c,d,x[k+8], S41,0x6FA87E4F);
+		d=II(d,a,b,c,x[k+15],S42,0xFE2CE6E0);
+		c=II(c,d,a,b,x[k+6], S43,0xA3014314);
+		b=II(b,c,d,a,x[k+13],S44,0x4E0811A1);
+		a=II(a,b,c,d,x[k+4], S41,0xF7537E82);
+		d=II(d,a,b,c,x[k+11],S42,0xBD3AF235);
+		c=II(c,d,a,b,x[k+2], S43,0x2AD7D2BB);
+		b=II(b,c,d,a,x[k+9], S44,0xEB86D391);
+		a=AddUnsigned(a,AA);
+		b=AddUnsigned(b,BB);
+		c=AddUnsigned(c,CC);
+		d=AddUnsigned(d,DD);
+	}
+ 
+	var temp = WordToHex(a)+WordToHex(b)+WordToHex(c)+WordToHex(d);
+ 
+	return temp.toLowerCase();
+}
+
+
+///////////
+// CRC32 //
+///////////
+function makeCRCTable(){
+    var c;
+    var crcTable = [];
+    for(var n =0; n < 256; n++){
+        c = n;
+        for(var k =0; k < 8; k++){
+            c = ((c&1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1));
+        }
+        crcTable[n] = c;
+    }
+    return crcTable;
+}
+
+function crc32(str) {
+    var crcTable = window.crcTable || (window.crcTable = makeCRCTable());
+    var crc = 0 ^ (-1);
+
+    for (var i = 0; i < str.length; i++ ) {
+        crc = (crc >>> 8) ^ crcTable[(crc ^ str.charCodeAt(i)) & 0xFF];
+    }
+
+    return (crc ^ (-1)) >>> 0;
+};
+
+
+/* Whirlpool Hashing Function v3.0 ~ Sean Catchpole - Copyright 2009 Public Domain */
+(function(){var D,h=10,u=[],w=[],q,p,B,v,A,f,e,b,a,G,F,s="\u1823\uc6E8\u87B8\u014F\u36A6\ud2F5\u796F\u9152\u60Bc\u9B8E\uA30c\u7B35\u1dE0\ud7c2\u2E4B\uFE57\u1577\u37E5\u9FF0\u4AdA\u58c9\u290A\uB1A0\u6B85\uBd5d\u10F4\ucB3E\u0567\uE427\u418B\uA77d\u95d8\uFBEE\u7c66\udd17\u479E\ucA2d\uBF07\uAd5A\u8333\u6302\uAA71\uc819\u49d9\uF2E3\u5B88\u9A26\u32B0\uE90F\ud580\uBEcd\u3448\uFF7A\u905F\u2068\u1AAE\uB454\u9322\u64F1\u7312\u4008\uc3Ec\udBA1\u8d3d\u9700\ucF2B\u7682\ud61B\uB5AF\u6A50\u45F3\u30EF\u3F55\uA2EA\u65BA\u2Fc0\udE1c\uFd4d\u9275\u068A\uB2E6\u0E1F\u62d4\uA896\uF9c5\u2559\u8472\u394c\u5E78\u388c\ud1A5\uE261\uB321\u9c1E\u43c7\uFc04\u5199\u6d0d\uFAdF\u7E24\u3BAB\ucE11\u8F4E\uB7EB\u3c81\u94F7\uB913\u2cd3\uE76E\uc403\u5644\u7FA9\u2ABB\uc153\udc0B\u9d6c\u3174\uF646\uAc89\u14E1\u163A\u6909\u70B6\ud0Ed\ucc42\u98A4\u285c\uF886";for(q=8;q-->0;){u[q]=[]}for(p=0;p<256;p++){B=s.charCodeAt(p/2);f=((p&1)==0)?B>>>8:B&255;e=f<<1;if(e>=256){e^=285}b=e<<1;if(b>=256){b^=285}a=b^f;G=b<<1;if(G>=256){G^=285}F=G^f;u[0][p]=[0,0];u[0][p][0]=(f<<24)|(f<<16)|(b<<8)|(f);u[0][p][1]=(G<<24)|(a<<16)|(e<<8)|(F);for(var q=1;q<8;q++){u[q][p]=[0,0];u[q][p][0]=(u[q-1][p][0]>>>8)|((u[q-1][p][1]<<24));u[q][p][1]=(u[q-1][p][1]>>>8)|((u[q-1][p][0]<<24))}}w[0]=[0,0];for(v=1;v<=h;v++){A=8*(v-1);w[v]=[0,0];w[v][0]=(u[0][A][0]&4278190080)^(u[1][A+1][0]&16711680)^(u[2][A+2][0]&65280)^(u[3][A+3][0]&255);w[v][1]=(u[4][A+4][1]&4278190080)^(u[5][A+5][1]&16711680)^(u[6][A+6][1]&65280)^(u[7][A+7][1]&255)}var z=[],y=[],n=0,j=0,d=[],o=[],m=[],l=[],g=[];var E=function(){var C,c,I,H,x;for(C=0,c=0;C<8;C++,c+=8){l[C]=[0,0];l[C][0]=((y[c]&255)<<24)^((y[c+1]&255)<<16)^((y[c+2]&255)<<8)^((y[c+3]&255));l[C][1]=((y[c+4]&255)<<24)^((y[c+5]&255)<<16)^((y[c+6]&255)<<8)^((y[c+7]&255))}for(C=0;C<8;C++){g[C]=[0,0];o[C]=[0,0];g[C][0]=l[C][0]^(o[C][0]=d[C][0]);g[C][1]=l[C][1]^(o[C][1]=d[C][1])}for(I=1;I<=h;I++){for(C=0;C<8;C++){m[C]=[0,0];for(x=0,H=56,c=0;x<8;x++,H-=8,c=H<32?1:0){m[C][0]^=u[x][(o[(C-x)&7][c]>>>(H%32))&255][0];m[C][1]^=u[x][(o[(C-x)&7][c]>>>(H%32))&255][1]}}for(C=0;C<8;C++){o[C][0]=m[C][0];o[C][1]=m[C][1]}o[0][0]^=w[I][0];o[0][1]^=w[I][1];for(C=0;C<8;C++){m[C][0]=o[C][0];m[C][1]=o[C][1];for(x=0,H=56,c=0;x<8;x++,H-=8,c=H<32?1:0){m[C][0]^=u[x][(g[(C-x)&7][c]>>>(H%32))&255][0];m[C][1]^=u[x][(g[(C-x)&7][c]>>>(H%32))&255][1]}}for(C=0;C<8;C++){g[C][0]=m[C][0];g[C][1]=m[C][1]}}for(C=0;C<8;C++){d[C][0]^=g[C][0]^l[C][0];d[C][1]^=g[C][1]^l[C][1]}};D=Whirlpool=function(c){return D.init().add(c).finalize()};D.version="3.0";D.init=function(){for(var c=32;c-->0;){z[c]=0}n=j=0;y=[0];for(c=8;c-->0;){d[c]=[0,0]}return D};var k=function(r){var c,x,t=r.toString();r=[];for(c=0;c<t.length;c++){x=t.charCodeAt(c);if(x>=256){r.push(x>>>8&255)}r.push(x&255)}return r};D.add=function(c,K){if(!c){return D}if(!K){c=k(c);K=c.length*8}var r=0,t=(8-(K&7))&7,C=n&7,x,H,J,I=K;for(x=31,J=0;x>=0;x--){J+=(z[x]&255)+(I%256);z[x]=J&255;J>>>=8;I=Math.floor(I/256)}while(K>8){H=((c[r]<<t)&255)|((c[r+1]&255)>>>(8-t));if(H<0||H>=256){return"Whirlpool requires a byte array"}y[j++]|=H>>>C;n+=8-C;if(n==512){E();n=j=0;y=[]}y[j]=((H<<(8-C))&255);n+=C;K-=8;r++}if(K>0){H=(c[r]<<t)&255;y[j]|=H>>>C}else{H=0}if(C+K<8){n+=K}else{j++;n+=8-C;K-=8-C;if(n==512){E();n=j=0;y=[]}y[j]=((H<<(8-C))&255);n+=K}return D};D.finalize=function(){var r,c,t,H="",C=[],x="0123456789ABCDEF".split("");y[j]|=128>>>(n&7);j++;if(j>32){while(j<64){y[j++]=0}E();j=0;y=[]}while(j<32){y[j++]=0}y.push.apply(y,z);E();for(r=0,c=0;r<8;r++,c+=8){t=d[r][0];C[c]=t>>>24&255;C[c+1]=t>>>16&255;C[c+2]=t>>>8&255;C[c+3]=t&255;t=d[r][1];C[c+4]=t>>>24&255;C[c+5]=t>>>16&255;C[c+6]=t>>>8&255;C[c+7]=t&255}for(r=0;r<C.length;r++){H+=x[C[r]>>>4];H+=x[C[r]&15]}return H}})();
+
+
+
+// Base64
+
+async function createBase64(text){
+  try{document.getElementById("tobase").value = b64EncodeUnicode(text);}catch(e){document.getElementById("tobase").value = e;}
+  try{document.getElementById("frombase").value = atob(text);}catch(e){document.getElementById("frombase").value = e;}
+  try{document.getElementById("tobaseu").value = utoa(text);}catch(e){document.getElementById("tobaseu").value = e;}
+  try{document.getElementById("frombaseu").value = atou(text);}catch(e){document.getElementById("frombaseu").value = e;}
+}
+
+function utoa(str) {
+    return window.btoa(unescape(encodeURIComponent(str)));
+}
+function atou(str) {
+    return decodeURIComponent(escape(window.atob(str)));
+}
+
+function b64EncodeUnicode(str) {
+    return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g, function(match, p1) {
+        return String.fromCharCode('0x' + p1);
+    }));
+}
+
+
+//URI Encode
+
+async function createURIencode(text){
+  try{document.getElementById("touri").value = encodeURI(text);}catch(e){document.getElementById("touri").value = e;}
+  try{document.getElementById("fromuri").value = decodeURI(text);}catch(e){document.getElementById("fromuri").value = e;}
+  try{document.getElementById("touriall").value = encodeURIComponent(text);}catch(e){document.getElementById("touriall").value = e;}
+  try{document.getElementById("fromuriall").value = encodeURIComponent(text);}catch(e){document.getElementById("fromuriall").value = e;}
+}
+
+
+
+// Hex
+
+function HexEncode(text){
+    var hex, i;
+
+    var result = "";
+    for (i=0; i<text.length; i++) {
+        hex = text.charCodeAt(i).toString(16);
+        result += hex+" ";
+    }
+
+    return result
+}
+
+function HexDecode(text){
+    var j;
+    var nText = text.replace(/\s/g,'');
+    var hexes = nText.match(/.{1,2}/g) || [];
+    var back = "";
+    for(j = 0; j<hexes.length; j++) {
+        back += String.fromCharCode(parseInt(hexes[j], 16));
+    }
+
+    return back;
+}
+
+
+// Binary
+
+function ToBinary(text) {
+    var output = "";
+    for (var i = 0; i < text.length; i++) {
+        output += text[i].charCodeAt(0).toString(2) + " ";
+    }
+    return output
+}
+
+function FromBinary(text) {
+    return text.trim().split(' ').map(bin => String.fromCharCode(parseInt(bin,2))).join('');
+}
+
+
+document.getElementById("input").addEventListener("input", function(){
+  createHashes();
+});
+</script>
+</html>

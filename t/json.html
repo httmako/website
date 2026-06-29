@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>prettyJSON | lutia.nl</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<textarea placeholder="input here" id="input" name="input" cols="35" rows="1" autofocus></textarea>
+<br><br>
+<pre id="content"></pre>
+<br>
+</body>
+<script>
+const clsMap = [
+    [/^".*:$/, "red"],
+    [/^"/, "green"],
+    [/true|false/, "blue"],
+    [/null/, "magenta"],
+    [/.*/, "darkorange"],
+]
+
+function prettifyJson(text){
+  let obj = JSON.parse(text);
+  return JSON.stringify(obj, null, 4)
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g, match => '<span style="color:'+clsMap.find(([regex]) => regex.test(match))[1]+'">'+match+'</span>');
+}
+    
+async function createJSON(){
+  let text = document.getElementById("input").value;
+  try{document.getElementById("content").innerHTML = prettifyJson(text)}catch(e){
+    document.getElementById("content").innerHTML = e;
+  };
+}
+
+document.getElementById("input").addEventListener("input", function(){
+  createJSON();
+});
+</script>
+</html>

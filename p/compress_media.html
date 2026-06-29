@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>compressing media | lutia.nl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 5px;
+}
+</style>
+</head>
+<body>
+<h1>Compressing pictures and videos</h1>
+
+<ul>
+<li><a href="#preamble">Preamble</a></li>
+<li><a href="#images-jpg">Compressing .jpg images</a></li>
+<li><a href="#images-png">Compressing .png images</a></li>
+<li><a href="#videos">Compressing videos</a></li>
+<li><a href="#videocodecs">Different video codecs</a></li>
+<li><a href="#gpuencoding">About GPU encoding</a></li>
+<li><a href="#iso">ISO images and 7zip</a></li>
+<li><a href="#converting">Converting images</a></li>
+<li><a href="#externals">About external websites</a></li>
+</ul>
+
+<h3 id="preamble">Preamble</h3>
+<p>
+This article explains how to reduce the filesize of videos and pictures.<br>
+This is not an analysis about the different compression methods or how they compare in their algorithm against each other.<br>
+This is a simple comparison of my own experiments and methods on how to reduce filesizes.<br>
+To install the tools mentioned here:
+<ul>
+<li><a target="_blank" href="https://0xacab.org/jvoisin/mat2">mat2</a> - via <span>sudo apt-get install mat2</span> or via git clone</li>
+<li><a target="_blank" href="https://github.com/tjko/jpegoptim">jpegoptim</a> - via <span>sudo apt-get install jpegoptim</span></li>
+<li><a target="_blank" href="https://pngquant.org/">pngquant</a> - via <span>sudo apt-get install pngquant</span></li>
+<li><a target="_blank" href="https://ffmpeg.org/">ffmpeg</a> - via <span>sudo apt-get install ffmpeg</span></li>
+<li><a target="_blank" href="https://imagemagick.org/">convert</a> (optional) - via <span>sudo apt-get install imagemagick</span></li>
+</ul>
+</p>
+
+<h3 id="images-jpg">Compressing .jpg images</h3>
+<p>
+I tried to compress the following image of Megumi Koneko with jpegoptim:<br>
+<img src="files/megumi_koneko_katherine_regular_21.jpg">
+<br>
+My findings: The metadata of image files can be HUGE. I tried to compress the image with jpegoptim but the filesize wouldn't change much. Then I tried to remove the Metadata of it and it reduced the filesize by an immensely 80%!<br>
+<br>
+The following table shows the filesize of the image in corrolation to what commands were ran:<br>
+<table>
+<tr><th>Size(bytes)</th><th>Size(MB)</th><th>Methods used</th></tr>
+<tr><td>8872122</td><td>8.5M</td><td>None (=input file)</td></tr>
+<tr><td>8872122</td><td>8.5M</td><td>jpegoptim</td></tr>
+<tr><td>1407225</td><td>1.4M</td><td>mat2</td></tr>
+<tr><td>1302516</td><td>1.3M</td><td>mat2 + jpegoptim</td></tr>
+</table>
+<br>
+As you can see the optimization alone didn't accomplish much, but if you clean up the metadata most of the filesize is gone!<br>
+An important detail here: Using jpegoptim BEFORE the metadata removal doesn't optimize the file at all, only afterwards jpegoptim reduced the filesize by 0.1MB.<br>
+An example with a different folder of Megumi Koneko's shooting pictures:<br>
+<pre>
+user@fedora:~/temp$ du -sh Rurika_HD_Set/
+<b>469M</b>    Rurika_HD_Set/
+user@fedora:~/temp$ <b>mat2 --inplace Rurika_HD_Set/*</b>
+user@fedora:~/temp$ du -sh Rurika_HD_Set/
+<b>77M</b>     Rurika_HD_Set/
+user@fedora:~/temp$ jpegoptim Rurika_HD_Set/*
+[...]
+user@fedora:~/temp$ du -sh Rurika_HD_Set/
+72M     Rurika_HD_Set/
+</pre>
+I saved nearly 400MB (!!) of my 470MB collection simply by removing metadata.<br>
+<br>
+TL;DR: If you have studio-quality pictures (or shooting pictures) removing the metadata can save a lot more disk space than only using jpegoptim.
+</p>
+
+<h3 id="images-png">Compressing .png images</h3>
+<p>
+The same concept as above applies for .png images aswell: Use mat2 to remove metadata and then use <span>pngquant</span> to optimize the image.<br>
+<br>
+As an example here is a character of the mobile game "Arknights" with a transparent background.<br>
+To compress the image I used the following command:<br>
+<pre>
+pngquant -v --skip-if-larger -s 1 -f --ext .png filename.png
+</pre>
+Explanation of the command above: -v makes it verbose, skip-if-larger is self-explanatory, -s 1 means "brute-force the optimization as good as possible", --ext .png sets the output filename to be the same as the input filename and -f forces the output file to overwrite the input file (because they have the same name thanks to --ext .png).
+<br>
+<br>
+With this the filesize went from 728KB to 189KB (!).<br>
+A comparison of both of these files (the first / left file is the unoptimized one, the later the optimized one):<br>
+
+<div style="overflow:auto;">
+<img style="float:left;width:380px;max-width:95%;margin-right:5px;" src="files/arknights.png">
+<img style="float:left;width:380px;max-width:95%;" src="files/arknights-fs8.png">
+</div>
+<br>
+Barely any noticeable difference between the two, while the filesize is more than halfed.<br>
+<br>
+<b>BUT</b> there is another way to minimize filesize: Converting the image to a .jpg file.<br>
+You can convert a png to jpg easily with ffmpeg with:
+<pre>
+ffmpeg -i "input.png" "output.jpg"
+</pre>
+If you convert the above 728KB source image into jpg with the above command the size will go down to 70.6KB, less than half the compressed png size.<br>
+The main problem with this approach is the possible quality loss in the image (jpg is a lossy format) and the missing alpha/transparency. If you convert the above image to jpg you will see a black background and not a transparent one, because jpg does not support transparency.<br>
+<br>
+If you now convert a whole folder of images from png to jpg it can save you a lot of disk space, in my case freeing multiple GB of storage.<br>
+An example of converting my folder of 36 png images to jpg:
+<pre>
+user@debian:~/temp$ du -sh .
+13M     .
+user@debian:~/temp$ ls -l | wc -l
+36
+user@debian:~/temp$ for i in *.png; do ffmpeg -loglevel error -hide_banner -i "$i" "$i.jpg"; done
+user@debian:~/temp$ rm *.png
+user@debian:~/temp$ ls -l | wc -l
+36
+user@debian:~/temp$ du -sh .
+4.9M    .
+</pre>
+<br>
+As you can see in the output above, I went from 13MB to 4.9MB without much quality lost.<br>
+If you decide to accept the possibility of quality loss then this is a great way of saving a lot of storage space.
+</p>
+
+<h3 id="videos">Compressing videos</h3>
+<p>
+Videos are optimized a bit differently than images. You mainly use the tool <span>ffmpeg</span> to run as many commands as you need.<br>
+<br>
+To simply compress a video you can use <span>ffmpeg -i "input.mp4" -crf 25 output.mp4</span>. crf means "constant rate factor" and the higher you set it the more compressed the videos get. 25 is a good number for compression vs quality, and the video quality is always acceptible with it.<br>
+<br>
+An example to compress an old video further: You can change the codecs to more modern ones. Simply add <span>-vcodec h264 -acodec aac</span> inside the ffmpeg command to change the codecs to h264/aac respectively. (This would make the command look like <span>ffmpeg -i "input.mp4" -crf 25 -vcodec h264 -acodec aac output.mp4</span>)<br>
+<br>
+If the framerate of the video is 60 you could lower it to 30 to save even more space. Simply add <span>-r 30</span> inside the ffmpeg command to limit the framerate to 30.<br>
+<br>
+Last but not least: Some videos have an extremely high resolution (e.g. 4K) and you can save a LOT of space if you limit the resolution to a lower one. Simply add <span>-vf "scale=1280:-1"</span> to set the resolution of the output video to HD.<br>
+<br>
+With all the optimizations combined the command would look like:<br>
+<pre>
+ffmpeg -i "input.mp4" -crf 25 -vcodec h264 -acodec aac -r 30 -vf "scale=1280:-1" output.mp4
+</pre>
+This once lowered the filesize of a 4K 30min video from 3.2GB down to 800MB (!).<br>
+<br>
+Another example would be NVidia's Shadowplay function: I sometimes clip gameplay videos that are 1 minute long, are in FullHD resolution and in 60fps. These clips are 330MB for one minute of video. If I simply run <span>ffmpeg -i "Gameplay 03.02.2022.mp4" -crf 25 output.mp4</span> it reduces the filesize down to 100MB or even as low as 30MB if the game doesn't have much action going on.<br>
+An example:
+<pre>
+user@debian:~/Videos$ ls -ahl
+-rwxrwxrwx 1 user user <b>341M</b> Jan 22 16:41 'divinity2_20220122_16.mp4'
+user@debian:~/Videos$ ffmpeg -i "divinity2_20220122_16.mp4" <b>-crf 25</b> _divinity2_20220122_16.mp4
+user@debian:~/Videos$ ls -ahl _divinity2_20220122_16.mp4
+-rwxrwxrwx 1 user user <b>54M</b> Feb  3 10:31 _divinity2_20220122_16.mp4
+</pre>
+<br>
+Using ffmpeg to either optimize or compress the video to sizes you think are reasonably enough is a great way to save a lot of storage space.<br>
+<br>
+Bitrates from compressing 2 different videos, cut out from a livestream with copied codecs):<br>
+
+Elden Ring gameplay (running around, camera movement, action, no static screens)
+<table>
+<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
+<tr><td>5400</td><td>38.7M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
+<tr><td>6700</td><td>49.1M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
+<tr><td>6100</td><td>44.9M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
+<tr><td>3500</td><td>26.8M</td><td>60FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1"</td></tr>
+<tr><td>3200</td><td>23.9M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
+</table>
+
+Vlog video (static camera, not much movement, focus on talking, shoulders-up angle)
+<table>
+<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
+<tr><td>5100</td><td>38.4M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
+<tr><td>1100</td><td>8.99M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
+<tr><td>1000</td><td>8.51M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
+<tr><td>464</td><td>4.41M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
+</table>
+
+Both of these videos above are taken from a single livestream. The bitrate of these streams is rather static because livestreaming services prefer encoding speed over size-efficiency. This enables them to show streams live and with not much delay, but this also causes the bitrate to be quite higher with static videos.  
+Re-encoding (compressing) videos with not much movement/action can save a lot of storage space, but gaming videos are not easily reduced in size without sacrificing the quality of the video. 
+</p>
+
+<h3 id="videocodecs">Different video codecs</h3>
+<p>
+I am not an expert with video codecs.<br>
+I simply tested a 1 minute long clip with different encodings and input parameters. The table below shows my findings in "time taken for encoding" and "resulting filesize".<br>
+<br>
+The input file is a 1 minute long clip from the "YuruCamp" movie (to be precise its from the 2nd to the 3rd minute of the movie).<br>
+The input video is h264 1920x1080 23.98fps and the audio is aac 128kb/s 48000Hz stereo.<br>
+The video has a few scenes with barely any movement and near the end firework explosions, which should make it a good clip to compare multiple codecs.<br>
+<br>
+Compared codecs:
+<ul>
+<li>AV1</li>
+<li>AVC/H264</li>
+<li>HEVC/H265</li>
+<li>VP8</li>
+<li>VP9</li>
+</ul>
+All these commands have been run with:<span>ffmpeg -benchmark -ss 120 -i "yurucamp_movie.mp4" -t 60 $params output.mp4</span> , where $params will be replaced with the flags from the below table.<br>
+If no explicit video codec is mentioned then it is the default h264 codec. Every video has been converted to and from FullHD.
+<table>
+<tr><th>Flags</th><th>Size(MB)</th><th>Time</th><th>notes</th></tr>
+<tr><td>/none/</td><td>22MB</td><td>24.510s</td><td>h264</td></tr>
+<tr><td>-movflags +faststart</td><td>22MB</td><td>24.217s</td><td>1:1 same as above</td></tr>
+<tr><td>-fps_mode vfr</td><td>22MB</td><td>25.006s</td><td>no difference to above</td></tr>
+<tr><td>-tune stillimage</td><td>27MB</td><td>26.464s</td><td>only good for slideshows</td></tr>
+<tr><td>-tune animation</td><td>18.7MB</td><td>27.419s</td><td>good for anime</td></tr>
+<tr><td>-tune animation -preset slow</td><td>17.5MB</td><td>41.268s</td><td>not worth the time</td></tr>
+<tr><td>-vcodec libx265</td><td>7.8MB</td><td>44.043s</td><td>bad compatibility</td></tr>
+<tr><td>-vcodec libx264 -crf 51</td><td>2MB</td><td>13.513s</td><td>very bad pixelation</td></tr>
+<tr><td>-vcodec libvpx</td><td>5.1MB</td><td>44.044s</td><td>=vp8, .webm, fluctuating quality</td></tr>
+<tr><td>-vcodec libvpx-vp9</td><td>13MB</td><td>172.476s</td><td>vp9, .mp4</td></tr>
+<tr><td>-vcodec librav1e</td><td>9.9MB</td><td>1161.541s</td><td>very slow</td></tr>
+<tr><td>-vcodec librav1e -speed 10</td><td>13MB</td><td>432.934</td><td>still slow</td></tr>
+<tr><td>-vcodec libaom-av1</td><td>???</td><td>~17min</td><td>not worth it</td></tr>
+<tr><td>-vcodec libsvtav1</td><td>9.9MB</td><td>19.499s</td><td>very good compared to h265</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 40</td><td>7.4MB</td><td>18.623s</td><td>default=35</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 63</td><td>1.9MB</td><td>14.580s</td><td>still watchable</td></tr>
+</table>
+<br>
+Takeaways and learnings from these convertions:
+<ul>
+<li>AV1 looks very promising as it takes less time than HEVC but has a bit larger filesize (but still smaller than h264)</li>
+<li>H265 is not supported by firefox or the windows explorer (for preview image in file explorer)</li>
+<li>H264 with full constant-rate-factor looks unwatchable, while av1 looks very watchable while having a lower filesize too</li>
+<li>Lowering the resolution with av1 on full compression doesn't help much to lower the filesize (1.9MB -> 1.2MB if you lower from FullHD -> HD)</li>
+<li>The other av1 codecs (except libsvtav1) are really slow</li>
+<li>"Preset slow" doesn't help much if you compare the extra time taken to the lower filesize. It's better to just take a slower codec without a slow preset (e.g. h264 preset slow -> h265 default)</li>
+<li>The "tune"'s for the h264 codec help a lot for barely any extra time taken</li>
+</ul>
+</p>
+
+<h3 id="gpuencoding">About GPU encoding</h3>
+<p>
+Modern GPUs support the option to encode and decode video streams directly on the GPU.<br>
+This is way faster than using the CPU, but also very limited with bad compression.<br>
+<br>
+This was tested with a RTX 4060 and the "Handbrake" software on windows 10.<br>
+It wasn't tested with ffmpeg as the compilation and flags for GPU encoding never worked.<br>
+In Handbrake it is called "nvenc".<br>
+<br>
+If you encode a video from h264 to libx265 with Handbrake it works really well. The GPU does all the work and the CPU sits idle. It converts a 20min video in a few seconds.<br>
+The main problem comes from this speed: It only converts the video codec, nothing more. It doesn't optimize the video or touch the quality at all.<br>
+Normally you want to convert from 264 to 265 for the better compression ratio (most of the time a 40% decrease in size for me, which saves a lot of storage space).<br>
+This compression is, atleast for me, absent when encoding with GPU. There is no reason to use this because the only reason I would want to convert these videos is for the better storage ratio.<br>
+<br>
+Maybe other tools do it better, or AMD GPUs are better at this. But atleast for me and the RTX4060 it is not worthwhile to encode with a GPU instead of a CPU.
+</p>
+
+<h3 id="iso">ISO images and 7zip</h3>
+<p>
+I found an old game in ISO format. It is 757MB in size. I used 7zip to compress it with various settings and algorithms.<br>
+All these flags are in the form of: <span>time 7za a -mmt=1 -mx=9 -ms=on &lt;other_flags&gt; file.7z file.iso</span>
+<table>
+<tr><th>Flags</th><th>size</th><th>time</th><th>sizeB</th></tr>
+<tr><td>//input</td><td>757M</td><td>0s</td><td>793280512</td></tr>
+<tr><td>//debian zip -r9</td><td>596M</td><td>24s</td><td>624238889</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=32m</td><td>255M</td><td>1m55s</td><td>266892288</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=64m</td><td>219M</td><td>2m3s</td><td>229587549</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=128m</td><td>188M</td><td>1m52s</td><td>196299252</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=256m</td><td>168M</td><td>1m42s</td><td>175248679</td></tr>
+<tr><td>-m0=lzma2 -mfb=64 -md=256m</td><td>168M</td><td>1m50s</td><td>175233526</td></tr>
+<tr><td>-m0=lzma2 -mfb=128 -md=256m</td><td>168M</td><td>2m11s</td><td>175238844</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=256m</td><td>168M</td><td>2m49s</td><td>175239475</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=512m</td><td>137M</td><td>2m45s</td><td>143334478</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=1024m</td><td>137M</td><td>2m40s</td><td>142998286</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=512m -mmt=4</td><td>168M</td><td>1m28s</td><td>175723953</td></tr>
+<tr><td>-m0=PPMd -mmem=2g</td><td>311M</td><td>3m28s</td><td>325407675</td></tr>
+<tr><td>-m0=bzip2 -md=256m -mpass=2</td><td>609M</td><td>5m45s</td><td>637839116</td></tr>
+</table>
+
+These tests were repeated with a 3.6G ISO file aswell.<br>
+<table>
+<tr><th>Flags</th><th>size</th><th>time</th><th>sizeB</th></tr>
+<tr><td>//input</td><td>3.6G</td><td>0s</td><td>3777429504</td></tr>
+<tr><td>//debian zip -r9</td><td>2.2G</td><td>3m36s</td><td>2306095871</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=32m</td><td>1853M</td><td>15m43s</td><td>1942683037</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=64m</td><td>1839M</td><td>18m9s</td><td>1928047100</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=128m</td><td>1821M</td><td>19m51s</td><td>1908844802</td></tr>
+<tr><td>-m0=lzma2 -mfb=32 -md=256m</td><td>1776M</td><td>20m18s</td><td>1861263263</td></tr>
+<tr><td>-m0=lzma2 -mfb=64 -md=256m</td><td>1773M</td><td>20m21s</td><td>1858951170</td></tr>
+<tr><td>-m0=lzma2 -mfb=128 -md=256m</td><td>1773M</td><td>21m33s</td><td>1858420775</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=256m</td><td>1773M</td><td>23m21s</td><td>1858579948</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=512m</td><td>1758M</td><td>25m41s</td><td>1843016904</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=1024m</td><td>1689M</td><td>26m50s</td><td>1770739093</td></tr>
+<tr><td>-m0=lzma2 -mfb=256 -md=512m -mmt=4</td><td>1788M</td><td>7m56.997s</td><td>1873921573</td></tr>
+<tr><td>-m0=PPMd -mmem=2g</td><td>2014M</td><td>18m53s</td><td>2110911339</td></tr>
+<tr><td>-m0=bzip2 -md=256m -mpass=2</td><td>2172M</td><td>22m37s</td><td>2276946270</td></tr>
+</table>
+
+I noticed the following things from these statistics:
+<ul>
+<li>Using multiple cores makes the process faster but the compression worse</li>
+<li>lzma2 is very good for ISOs in both compression and speed</li>
+<li>The dictionary size increases compression but also makes the process slower</li>
+</ul>
+
+This means that the default settings (on windows) of 64/64m is a good tradeoff between time taken and compression ratio.
+</p>
+
+<h3 id="converting">Converting images</h3>
+<p>
+There are many filetypes for images. The most common ones nowadays are: jpg,png,webp,gif<br>
+<br>
+To easily convert images between different formats you can use ffmpeg or imagemagick's convert.<br>
+<br>
+A small feature comparison:
+<ul>
+<li>jpg , lossy format which enables smaller filesizes</li>
+<li>png , lossless format which can limit its colors and support transparency</li>
+<li>gif , lossless and supports transparency and animations</li>
+<li>webp, which enables lossy and lossless images with smaller filesizes as jpg or png</li>
+</ul>
+
+The image formats where tested with a normal image of a girl in .jpg form, a manga page in .jpg and a graphic of an anime-arknights character in .png with transparency.<br>
+The transparency will be lost if it gets converted to jpg, which will not be shown below in the comparison but has to be kept in mind.
+<br>
+<table>
+<tr><th>type</th><th>input</th><th>jpegoptim</th><th>pngquant</th><th>webp</th><th>jpg</th><th>png</th><th>gif</th><th>webp(lossless)</th></tr>
+<tr><td>photograph</td><td>1.4M</td><td>1.3M</td><td>8.0M</td><td>634K</td><td>1.4M</td><td>12M</td><td>13M</td><td>69M</td></tr>
+<tr><td>mangapage</td><td>304K</td><td>304K</td><td>626K</td><td>169K</td><td>304K</td><td>614K</td><td>522K</td><td>599K</td></tr>
+<tr><td>artwork</td><td>729K</td><td>181K</td><td>205K</td><td>98K</td><td>181K</td><td>729K</td><td>241K</td><td>449K</td></tr>
+</table>
+<br>
+
+The above table shows that webp has the lowest filesize of all of them.<br>
+The jpg format is 2nd place because it is a lossy format, which is the reason why png is (as a lossless format) in 3rd place. The last place is the GIF format.<br>
+
+<br>
+The manga page can be further converted / compressed by limiting the available colors because the image is mainly using black and white as colors.<br>
+If you use the command <span>pngquant -s 1 10 input.png</span> you can limit the available colors to only 10, which will all be different tones of black/gray. This keeps the quality of the image but lowers the filesize down to 2/3 of the original .jpg image.<br>
+To further compress a black and white manga page you can make it monochrome only, which will reduce its size down to 1/3 of the original.<br>
+To make an image black and white only you can use the following command:<br>
+<span>convert input.png -monochrome output.png</span><br>
+
+A comparison of the (in order) original jpg image, the converted and optimized png image with only 10 colors and the monochrome png image:<br>
+<div style="overflow:auto;">
+<img style="float:left;max-width:250px;margin-right:5px;" src="files/conv_orig_356111.jpg">
+<img style="float:left;max-width:250px;;margin-right:5px;" src="files/conv_10colors.png">
+<img style="float:left;max-width:250px;" src="files/conv_mono.png">
+</div>
+
+<br>
+
+As you can see in the images above, the first 2 are near identical but the last one has the typical "dotted surfaces" to simulate different shades of gray. The file size is, from first to last, 303KB - 230KB - 98,2KB.<br>
+
+<br>
+
+One important fact to consider when chosing your prefered image format: Webp is not fully supported on every platform yet.<br>
+Microsoft Paint can not edit it and some image viewers can not open it yet either. On the internet many people dislike it because it can not be as easily handled as a png.<br>
+There are also vulnerabilities like this one: <a target="_blank" href="https://arstechnica.com/security/2023/09/google-quietly-corrects-previously-submitted-disclosure-for-critical-webp-0-day/">https://arstechnica.com/security/2023/09/google-quietly-corrects-previously-submitted-disclosure-for-critical-webp-0-day/</a> , which really make it difficult to like webp in its current state.
+</p>
+
+
+<h3 id="externals">About external websites</h3>
+<p>
+I recently got an email about this article which mentions a website that has better compression than the tools I mentioned here.<br>
+<br>
+Yes, this website has better compression than pngquant. Pngquant already has the best compression of all the linux commandline tools out there.<br>
+But I dislike having to rely on a website for my image compressions. This has multiple reasons:
+<ul>
+<li>The website could save every image I compress (privacy / confidentiality)</li>
+<li>If the website is down or if I am working offline then I would have to find an alternative (availability)</li>
+<li>The website could insert malicious data into my images (Integrity)</li>
+</ul>
+I tend to compare this with the webp image format: Ofcourse it has a way better filesize and compression ratio than png or jpg, but I personally do not use it because it has barely any support on modern devices or software.<br>
+So even though {webp,the website} is the best at compression, I stick to my little linux commands which do a well enough job for me and are supported {offline,everywhere}.
+</p>
+
+<br><br><br>
+</body>
+</html>

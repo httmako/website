@@ -1,0 +1,44 @@
+---
+title: Example Pandoc Document
+author: Me, Myself and I
+date: 10.11.2021
+toc: true
+numbersections: true
+geometry: margin=3cm
+urlcolor: blue
+mainfont: LiberationSans
+header-includes: |
+    \usepackage{fancyhdr}
+    \pagestyle{fancy}
+    \lfoot{Generated with pandoc}
+    \rfoot{Seite \thepage}
+---
+
+\newpage
+
+
+
+# Header 1
+
+## Header 2
+
+This is content. Now an image:
+
+![Utage from Arknights](test.png "test.png image at 50% width"){ width=50% }
+
+
+
+The next Heading will be on the next page because i write a \\newpage after this sentence.
+
+\newpage
+
+# Header 3
+You can do all things markdown provides, like _italic_ and **bold** and code with 4 spaces
+
+    echo "Hello World"
+    Hello World
+
+Now comes a "list of figures" with \\listoffigures:
+
+\listoffigures
+

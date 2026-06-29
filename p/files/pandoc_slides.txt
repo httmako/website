@@ -1,0 +1,52 @@
+---
+title: Example
+--background-image: https://img3.gelbooru.com/images/7b/fe/7bfed13e0c310bc5fb1de167ffe564bc.jpg
+title-slide-attributes:
+    data-background-image: https://img3.gelbooru.com/images/70/53/7053e91ecc3930e12131300b42d2ae64.jpg
+    data-background-size: contain
+---
+
+# Slide One
+
+- Press s to open the presenter view in a popup window
+- There will be notes there if you are on this slide
+
+::: notes
+
+This is my note.
+
+- It can contain Markdown
+- like this list
+
+:::
+
+# Slide Two
+
+Pandoc is:
+
+- Easy to generate
+- Can run in every browser
+- No lag or delay
+
+# Slide Three
+
+Now a table:
+
+:::::::::::::: {.columns}
+::: {.column width="40%"}
+Money  
+Time
+:::
+::: {.column width="60%"}
+Not much  
+Even less
+:::
+::::::::::::::
+
+# Conclusion
+
+Pandoc is awesome!
+
+. . .
+
+Thanks for listening! 

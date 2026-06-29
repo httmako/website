@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>zip vs 7zip | lutia.nl</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 5px;
+}
+
+</style>
+</head>
+<body>
+<h1>Comparing ZIP compression methods</h1>
+
+<ul>
+<li><a href="#preamble">Preamble</a></li>
+<li><a href="#images">Comparison with Images</a></li>
+<li><a href="#text">Comparison with Text</a></li>
+</ul>
+
+<h3 id="preamble">Preamble</h3>
+<p>
+This is a comparison between compression methods (mainly 7zip and unix tools).<br>
+This is not an analysis about the different compression methods or how they compare in their algorithm against each other.<br>
+This is a simple comparison of the compression size of a small set of data.<br>
+<br>
+LZMA2 is worse if you use multiple threads. It is recommended to use 1 or max. 2 threads for compression, because if you have more than 2 it splits the whole archive in 2 and makes the compression of similar content 2 times instead of once. (This information can be found in the 7zip documentation)
+</p>
+
+<h3 id="images">Comparison with Images</h3>
+<p>
+This test was conducted with 35 images that are part of a cosplay shooting from Megumi Koneko. A sample picture can be seen <a target="_blank" href="files/megumi_koneko_katherine_regular_21.jpg">here</a>.<br>
+<br>
+Warning: These tests have been done with jpg images. The results for png images could be different.<br>
+<br>
+All compressions have been done with the "Compression Level" set to "Ultra". (And as mentioned above with only 1 Thread)<br>
+<br>
+The size of these 35 images without any compression: 267198693 (<span>du -sb</span>) / in a readable size: 255MB (<span>du -sh</span>)
+<table>
+<tr><th>Size(bytes)</th><th>Program</th><th>Method</th><th>Level</th><th>DictionarySize</th><th>WordSize</th><th>SolidBlockSize</th></tr>
+<tr><td>261157265</td><td>7zip</td><td>PPMd</td><td>Ultra</td><td>192mb</td><td>32</td><td>solid</td></tr>
+<tr><td>262354320</td><td>7zip</td><td>bzip2</td><td>Ultra</td><td>900kb</td><td>X</td><td>128m</td></tr>
+<tr><td>263087428</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>64mb</td><td>64</td><td>solid</td></tr>
+<tr><td>264065788</td><td>7zip</td><td>lzma</td><td>Ultra</td><td>64mb</td><td>64</td><td>solid</td></tr>
+<tr><td>264535465</td><td>Debian10 zip</td><td>Deflation</td><td>Normal</td><td>X</td><td>X</td><td>X</td></tr>
+</table>
+<br>
+As you can see the best algorithm was 7zip's PPMd method.<br>
+An important detail here: It took way longer to compress it with PPMd than with a default linux <span>zip</span> command. The difference between the first and last is only ~3.4MB, but the time it took (with only 1 thread) was way bigger for the PPMd method than for a simple zip.<br>
+<br>
+To summarize this: <b>There is no clear winner here.</b>
+</p>
+
+<h3 id="text">Comparison with Text</h3>
+<p>
+This test was conducted with 4677 text files in 1670 folders. The size of the files were 24.8MB (Size on disk was 34.2MB).<br>
+<br>
+All 7zip compressions have been done with the "Compression Level" set to "Ultra". (And as mentioned above with only 1 Thread)<br>
+<table>
+<tr><th>Size(bytes)</th><th>Size(MB)</th><th>Program</th><th>Method</th><th>Level</th><th>DictionarySize</th><th>WordSize</th><th>SolidBlockSize</th></tr>
+<tr><td>2677842</td><td>2.6M</td><td>7zip</td><td>PPMd</td><td>Ultra</td><td>192mb</td><td>32</td><td>solid</td></tr>
+<tr><td>2749614</td><td>2.7M</td><td>7zip</td><td>PPMd</td><td>Ultra</td><td>64mb</td><td>32</td><td>solid</td></tr>
+<tr><td>2834220</td><td>2.8M</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>1024mb</td><td>256</td><td>solid</td></tr>
+<tr><td>2843328</td><td>2.8M</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>1024mb</td><td>128</td><td>solid</td></tr>
+<tr><td>2860599</td><td>2.8M</td><td>7zip</td><td>lzma</td><td>Ultra</td><td>64mb</td><td>64</td><td>solid</td></tr>
+<tr><td>2861099</td><td>2.8M</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>1024mb</td><td>64</td><td>solid</td></tr>
+<tr><td>2861099</td><td>2.8M</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>64mb</td><td>64</td><td>solid</td></tr>
+<tr><td>2934539</td><td>2.8M</td><td>7zip</td><td>lzma2</td><td>Ultra</td><td>192mb</td><td>32</td><td>solid</td></tr>
+<tr><td>3406129</td><td>3.3M</td><td>tar(debian)</td><td>bzip2</td><td>Ultra</td><td>X</td><td>X</td><td>X</td></tr>
+<tr><td>3409919</td><td>3.3M</td><td>7zip</td><td>bzip2</td><td>Ultra</td><td>900kb</td><td>X</td><td>solid</td></tr>
+<tr><td>4247956</td><td>4.1M</td><td>tar(debian)</td><td>gzip</td><td>Ultra</td><td>X</td><td>X</td><td>X</td></tr>
+<tr><td>8482893</td><td>8.1M</td><td>zip(7zip)</td><td>deflate</td><td>Ultra</td><td>32kb</td><td>128</td><td>X</td></tr>
+<tr><td>8487933</td><td>8.1M</td><td>zip(7zip)</td><td>deflate</td><td>Ultra</td><td>32kb</td><td>32</td><td>X</td></tr>
+<tr><td>8581195</td><td>8.2M</td><td>zip(7zip)</td><td>deflate</td><td>Normal</td><td>192mb</td><td>32</td><td>X</td></tr>
+<tr><td>8766921</td><td>8.4M</td><td>zip(debian)</td><td>deflate</td><td>Ultra(9)</td><td>X</td><td>X</td><td>X</td></tr>
+<tr><td>8786534</td><td>8.4M</td><td>zip(debian)</td><td>deflate</td><td>Normal(6)</td><td>X</td><td>X</td><td>X</td></tr>
+</table>
+<br>
+Every text file had the same "Heading" text, like a logo made with text characters. This explains the bigger size of the debian zip compression as the small dictionary size is a burdgen for this heading that is present in every file.<br>
+<br>
+There are 2 main sections: The 7zip modern methods on the top that are all 2.8MB or lower and the default zip methods at the bottom with 8.1MB or higher.<br>
+<br>
+The default method for 7zip is the LZMA2 method, and this comparison shows why: It's perfect for text compression. If you raise the word size a bit it's nearly as good as the PPMd method.<br>
+<br>
+To summarize this: <b>The winners are the new 7zip methods PPMd, lzma and lzma2</b>
+
+</p>
+
+<br><br><br>
+</body>
+</html>
+

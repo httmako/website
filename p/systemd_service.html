@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="description" content="Shows examples for secure systemd .service files" />
+  <title>systemd services | lutia.nl</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">systemd services | lutia.nl</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#securing-services-with-systemd"
+id="toc-securing-services-with-systemd">Securing services with
+systemd</a>
+<ul>
+<li><a href="#the-problem" id="toc-the-problem">The problem</a></li>
+<li><a href="#solution-via-systemd-services"
+id="toc-solution-via-systemd-services">Solution via systemd
+services</a></li>
+</ul></li>
+<li><a href="#faq" id="toc-faq">FAQ</a>
+<ul>
+<li><a href="#about-chroot-rootdirectory"
+id="toc-about-chroot-rootdirectory">About chroot /
+RootDirectory=</a></li>
+<li><a href="#troubleshooting-exited-processes"
+id="toc-troubleshooting-exited-processes">Troubleshooting exited
+processes</a></li>
+</ul></li>
+</ul>
+</nav>
+<h1 id="securing-services-with-systemd">Securing services with
+systemd</h1>
+<p>This blog documents my findings with making a linux application as
+secure as possible using systemd services.</p>
+<h2 id="the-problem">The problem</h2>
+<p>Imagine this scenario: You have a linux server and want to host an
+application that no other user has access to.<br />
+You create a new user for this and start the application inside a
+“screen” or in the background using a shell script.</p>
+<p>This enables multiple attack vectors (or configuration problems):</p>
+<ul>
+<li>Maybe the user has SSH enabled, which makes it attackable from the
+outside</li>
+<li>The user has a login shell, which makes its password attackable from
+within the server</li>
+<li>If the application is insecure it could read any file from the file
+system via bugs</li>
+<li>A hacker could have access to your linux user if the application is
+insecure (e.g. exploits from log4j, activemq, etc.)</li>
+</ul>
+<h2 id="solution-via-systemd-services">Solution via systemd
+services</h2>
+<p>By changing your application from a simple user-started
+<code>./myapp</code> into a systemd service you can use the security
+features enabled by systemd.</p>
+<p>Documentation for this:</p>
+<ul>
+<li><a
+href="https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html#IPAccounting=">https://www.freedesktop.org/software/systemd/man/latest/systemd.resource-control.html#IPAccounting=</a></li>
+<li><a
+href="https://www.man7.org/linux/man-pages/man5/systemd.exec.5.html">https://www.man7.org/linux/man-pages/man5/systemd.exec.5.html</a></li>
+<li><a
+href="https://www.man7.org/linux/man-pages/man5/systemd.service.5.html">https://www.man7.org/linux/man-pages/man5/systemd.service.5.html</a></li>
+</ul>
+<p>An example, not-yet-secured systemd .service file
+(e.g. <code>/etc/systemd/system/restapi.service</code>):</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[Unit]</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="va">Description</span><span class="op">=</span>RestAPI</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="va">After</span><span class="op">=</span>network.target <span class="ex">iptables.service</span> mariadb.service</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">[Service]</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="va">Type</span><span class="op">=</span>simple</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="va">User</span><span class="op">=</span>restapi</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="va">Group</span><span class="op">=</span>restapi</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="va">WorkingDirectory</span><span class="op">=</span>/opt/restapi</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="va">ExecStart</span><span class="op">=</span>/opt/restapi/bin/rapi</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="va">Restart</span><span class="op">=</span>always</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="va">RestartSec</span><span class="op">=</span>1m</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="ex">[Install]</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="va">WantedBy</span><span class="op">=</span>multi-user.target</span></code></pre></div>
+<p>(After creating new service files you have to run
+<code>systemctl daemon-reload</code>)</p>
+<p>This creates a service for an application named
+<code>RestAPI</code>.<br />
+It automatically restarts it 1 minute after it crashed (if it crashes)
+and starts it after the network, iptables and mariadb services
+loaded.<br />
+This application is started with the “restapi” user, which means it has
+no root privileges when running.</p>
+<p>Running a service as a non-root user has many side effects, for
+example:</p>
+<ul>
+<li>Missing capabilities, which means you can’t bind to a port &lt;1024
+and you can’t send raw network packets</li>
+<li>Missing read/write permissions for specific folders
+(e.g. /var/log/)</li>
+</ul>
+<p>Running the service as a user has many advantages, for example:</p>
+<ul>
+<li>Higher security thanks to less privileges</li>
+<li>Easier management of permissions</li>
+<li>More security compliant thanks to less attack surface</li>
+</ul>
+<p>SystemD, as mentioned in the documentation above, has many more
+security features than just user services.<br />
+To analyze your systemd service files you can use the
+<code>systemd-analyze security</code> command. To analyze a single
+service file in detail you can use
+<code>systemd-analyze security &lt;svcname&gt;</code>.<br />
+This is a fully enhanced systemd service file with comments to explain
+each feature:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[Unit]</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">Description</span><span class="op">=</span>MyRestAPI</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="va">After</span><span class="op">=</span>network.target <span class="ex">mariadb.service</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Location of this file would be /etc/systemd/system/myrestapi.service (on redhat and debian)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="ex">[Service]</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Type simple is default, service is considered started after process has been started</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="va">Type</span><span class="op">=</span>simple</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="co"># Set the user and group that runs this process, highly recommended</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="va">User</span><span class="op">=</span>myuser</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="va">Group</span><span class="op">=</span>myuser</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co"># You could also generate a random user that starts this process.</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning: user-file ownership will probably be a problem if using this!</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="co"># DynamicUser=true</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="va">WorkingDirectory</span><span class="op">=</span>/srv/myrestapi</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="co"># The starting command for this service, e.g. full path to an executable file</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="va">ExecStart</span><span class="op">=</span>/srv/myrestapi/bin/myrestapi</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># When to restart, always = if service stopped we restart, no matter the exit code. on-failure = only restart if exit code is non-zero</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="va">Restart</span><span class="op">=</span>always</span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Delay between restarts, 1m = 1minute</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="va">RestartSec</span><span class="op">=</span>1m</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># You could also set environment variables like this:</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#Environment=USER=x HOME=/home/x</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Hardening from now on</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable counting of IP bytes in and out for the service</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="va">IPAccounting</span><span class="op">=</span>yes</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Only allow sockets, IPv4 and IPv6 as network protocols</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictAddressFamilies</span><span class="op">=</span>AF_UNIX <span class="ex">AF_INET</span> AF_INET6</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># The following 2 lines enable an IP whitelist for this service</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># This allows this application to only communicate with the localhost, neither requests from nor to the internet are allowed</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressDeny</span><span class="op">=</span>any</span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressAllow</span><span class="op">=</span>127.0.0.0/8</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># You can also disable all network traffic with PrivateNetwork</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># PrivateNetwork=true</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Service can no longer gain privileges via e.g. setuid or fs caps</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="va">NoNewPrivileges</span><span class="op">=</span>true</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Creates new /tmp and /var/tmp directories for this process. After this systemd service stops these tmp folders will be removed!</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateTmp</span><span class="op">=</span>true</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Filesystem namespacing, doesn&#39;t propagate mounts to this process</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateMounts</span><span class="op">=</span>true</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables /dev/sda,mem,port,etc.</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateDevices</span><span class="op">=</span>true</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes /usr,/boot,/efi,/etc read-only, but can still write to /tmp,/srv</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Set this to &quot;strict&quot; to make the whole filesystem read-only</span></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectSystem</span><span class="op">=</span>full</span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Hide /home,/root and /run/user (inaccessible and empty)</span></span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHome</span><span class="op">=</span>true</span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Make cgroups read-only (only container managers use write) and disallow namespace creation</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectControlGroups</span><span class="op">=</span>true</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictNamespaces</span><span class="op">=</span>true</span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Prevents hostname and clock changes</span></span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHostname</span><span class="op">=</span>true</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectClock</span><span class="op">=</span>true</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Set umask of files created by service&#39;s application (u=rwx, go=nothing)</span></span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="va">UMask</span><span class="op">=</span>0077</span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove IPC after service is stopped</span></span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="va">RemoveIPC</span><span class="op">=</span>true</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Protect kernel variables and modules</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelTunables</span><span class="op">=</span>true</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelModules</span><span class="op">=</span>true</span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Only lets the process see itself in /proc/</span></span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="va">ProcSubset</span><span class="op">=</span>pid</span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectProc</span><span class="op">=</span>noaccess</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables setting SUID/SGID on files</span></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictSUIDSGID</span><span class="op">=</span>true</span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove all root capabilities (bind port &lt; 1024, ignore file perms, etc.)</span></span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="va">CapabilityBoundingSet</span><span class="op">=</span></span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># Files not owned by you appear to be owned by &quot;nobody&quot; (or root)</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateUsers</span><span class="op">=</span>true</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Disallow access to syslog</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelLogs</span><span class="op">=</span>true</span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes directories invisible for the process. Warning, some processes need those! (or use ReadOnlyPaths=)</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="va">InaccessiblePaths</span><span class="op">=</span>/bin <span class="ex">/boot</span> /lib /lib64 /media /mnt /opt /root /sbin /usr /var</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable specific syscalls (setting clock, tracing, kernel-modules, mounting, rebooting, root-only, changing sawp, emulating other CPUs, obsolete calls)</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="va">SystemCallFilter</span><span class="op">=</span>~@clock <span class="ex">@debug</span> @module @mount @reboot @privileged @swap @cpu-emulation @obsolete</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable changing kernel-exec-domain and realtime execution (could hog cpu)</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="va">LockPersonality</span><span class="op">=</span>true</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictRealtime</span><span class="op">=</span>true</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="co"># Redirect the stdout and stderror to a file</span></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="va">StandardOutput</span><span class="op">=</span>append:/srv/myrestapi/stdout.log</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="va">StandardError</span><span class="op">=</span>inherit</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="co"># Chroot&#39;s the process into the directory.</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning: This doesn&#39;t work well for non-static binaries because of missing /lib!</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="co"># RootDirectory=/srv/myrestapi</span></span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="ex">[Install]</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="va">WantedBy</span><span class="op">=</span>multi-user.target</span></code></pre></div>
+<p>The above is an example of a systemd service file with nearly all of
+the security features activated.<br />
+If you use the chroot (RootDirectory=) and User= settings above then
+your application is (nearly) as secure as possible:</p>
+<ul>
+<li>No SSH or shell login possible, because of unreadable /bin</li>
+<li>No network access to or from the outside, only to localhost</li>
+<li>No ability to see any folder on the system thanks to chroot /
+unreadable folders</li>
+</ul>
+<p>Even if someone hacks the application and can execute code, there is
+no easy way forward as the attacker can neither launch a program/shell
+(no /bin folder accessible) nor connect to other systems from your
+server (<code>IPAddressAllow=127.0.0.0/8</code>).</p>
+<p>This chroot and dynamic-user setup mainly works for Golang REST-APIs
+only!<br />
+Golang applications can be built as a static executable (which don’t
+need the /lib folder) and a rest api doesn’t need to access files
+(mainly needs port 80 http and port 3306 mysql).<br />
+You can verify if your executable is static by using the
+<code>ldd</code> tool (e.g. <code>ldd myapp</code>).<br />
+If your application is not static or needs connectivity to the outside
+world without a proxy then it is a bit more complex to setup.<br />
+Example: An application needs the /etc/hosts file for DNS resolutions
+and the /lib folder for e.g. libc libraries. It would also need
+connectivity to the internet, which means configuring “IPAddressAllow=”
+will be nearly impossible.</p>
+<h1 id="faq">FAQ</h1>
+<h2 id="about-chroot-rootdirectory">About chroot / RootDirectory=</h2>
+<p>The main problem with chroot: The <code>/etc/resolv.conf</code> file
+is not available. This makes DNS resolutions impossible, which means you
+have to enter <code>127.0.0.1</code> in your configs instead of
+<code>localhost</code>, because your application won’t be able to
+resolve localhost to the IP address anymore.</p>
+<p>If you need DNS then I recommend to use the
+<code>InaccessiblePaths=</code> configuration and not use chroot
+anymore.</p>
+<p>Chroot is also going to create a few new folders in your target
+directory (<code>dev,etc,proc,root,sys,tmp,usr,var</code>). They are all
+empty, but systemd seems to create them automatically when using
+<code>RootDirectory=</code> and not clean them up after stopping the
+application.</p>
+<p>I highly recommend to only use chroot if you have a very simple and
+static application.</p>
+<h2 id="troubleshooting-exited-processes">Troubleshooting exited
+processes</h2>
+<p>(All these commands require root)</p>
+<p>After creating your service file you have to run
+<code>systemctl daemon-reload</code> to load them initially.<br />
+To start them use <code>systemctl start &lt;myapp&gt;</code>. To check
+their status (e.g. if they are running) you use
+<code>systemctl status &lt;myapp&gt;</code>.<br />
+To see more of the status log output you can use
+<code>journalctl -xeu &lt;myapp&gt;</code>.</p>
+<p>If the process exited with e.g. status 2,203 or similar then check if
+your service file is correct and if your directories and ExecStart
+application actually exists.<br />
+Check the stdout.log file (set by
+<code>StandardOutput=append:/srv/myrestapi/stdout.log</code>) to check
+for any application errors.<br />
+Common mistakes are:</p>
+<ul>
+<li>Wrong permissions of files (e.g. no read/write permission)</li>
+<li>Unable to access IPs because of
+<code>IPAddressAllow=127.0.0.0/8</code></li>
+<li>Unable to resolve DNS (e.g. localhost-&gt;127.0.0.1) because of
+<code>RootDirectory=</code> (=chroot)</li>
+</ul>
+<p>Logs are available by either accessing the stdout.log file or by
+using <code>journalctl -xe</code> to see the systemd stop reason.</p>
+</body>
+</html>

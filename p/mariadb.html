@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>mariadb | lutia.nl</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">mariadb | lutia.nl</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#about" id="toc-about">About</a></li>
+<li><a href="#installing-and-configuration"
+id="toc-installing-and-configuration">Installing and
+Configuration</a></li>
+<li><a href="#ram-usage-and-performance"
+id="toc-ram-usage-and-performance">RAM usage and performance</a></li>
+<li><a href="#storage" id="toc-storage">Storage</a></li>
+<li><a href="#backups" id="toc-backups">Backups</a></li>
+<li><a href="#performance-for-inserts"
+id="toc-performance-for-inserts">Performance for inserts</a></li>
+<li><a href="#performance-for-select-where-like"
+id="toc-performance-for-select-where-like">Performance for SELECT WHERE
+LIKE</a></li>
+<li><a href="#performance-by-using-index"
+id="toc-performance-by-using-index">Performance by using index</a></li>
+</ul>
+</nav>
+<h2 id="about">About</h2>
+<p>This page is a summary of my learnings with mariadb.</p>
+<p>All performance results were tested on an Debian11 server with a
+4core 2GHz CPU (Burst 3.35GHz, AMD EPYC 7702P) and 8GB RAM.<br />
+The mariadb was not changed from its default settings, the innodb cache
+is (according to grafana) 128MiB.</p>
+<p>It is not supposed to be a complete overview or a detailed guide on
+how to use it, but instead just a collection of experiences and
+accidental benchmarks.</p>
+<h2 id="installing-and-configuration">Installing and Configuration</h2>
+<p>To install mariadb simply use the default command:</p>
+<pre><code>sudo apt-get install mariadb-server</code></pre>
+<p>The only config you may have to change is the listening IP.<br />
+By default the mariadb server only listens on localhost port 3306, which
+means no one can connect from the outside.<br />
+To enable this you have to edit this in the config that is located in
+Debian 11 at:</p>
+<pre><code>/etc/mysql/mariadb.conf.d/50-server.cnf</code></pre>
+<p>There around line 30 you can change the bind-address to 0.0.0.0 to
+allow external access.</p>
+<h2 id="ram-usage-and-performance">RAM usage and performance</h2>
+<p>By default mariadb only uses 128MB of RAM as cache.<br />
+This can be increased to increase performance. Citation from the mariadb
+wiki:</p>
+<blockquote>
+<p>The InnoDB buffer pool is a key component for optimizing MariaDB. It
+stores data and indexes, and you usually want it as large as possible so
+as to keep as much of the data and indexes in memory, reducing disk IO,
+as main bottleneck.</p>
+</blockquote>
+<p>Source: <a
+href="https://mariadb.com/kb/en/innodb-buffer-pool/">https://mariadb.com/kb/en/innodb-buffer-pool/</a></p>
+<p>To check how large your current buffer is you can use one of those 2
+commandlines as root (the first one uses SQL):</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> <span class="at">-e</span> <span class="st">&quot;SHOW VARIABLES LIKE &#39;innodb_buffer_pool_size&#39;&quot;</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mysqld</span> <span class="at">--help</span> <span class="at">--verbose</span> <span class="kw">|</span> <span class="fu">grep</span> innodb-buffer-pool-size</span></code></pre></div>
+<p>To set it temporary to 1GB you can use the following SQL:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SET</span> <span class="kw">GLOBAL</span> innodb_buffer_pool_size<span class="op">=</span><span class="dv">1073741824</span>;</span></code></pre></div>
+<p>To make this setting persist between restarts you have to edit your
+config file.<br />
+This config file is most likely at <code>/etc/mysql/my.cnf</code><br />
+In there add the following beneath the socket line:</p>
+<pre><code>[server]
+innodb_buffer_pool_size=1073741824</code></pre>
+<p>After adding this, my configuration file looks like this:</p>
+<pre><code>[client-server]
+port = 3306
+socket = /run/mysqld/mysqld.sock
+[server]
+innodb_buffer_pool_size=1073741824
+
+!includedir /etc/mysql/conf.d/
+!includedir /etc/mysql/mariadb.conf.d/</code></pre>
+<p>You can now restart mariadb (<code>systemctl restart mariadb</code>)
+and verify with the above commands that the 1GB setting is still
+set.</p>
+<p>It is recommended to set the buffer size to more than 1GB if your
+server has enough RAM, please consult the wiki or other sources for
+recommended settings beyond this.</p>
+<h2 id="storage">Storage</h2>
+<p>I have over 50.000.000 (50million) chat messages saved in one table
+and around 10.000.000 log lines in another table.<br />
+If i export both with mariadb-dump I get around 6GB of .sql text
+files.<br />
+The lib folder which contains the database files directly are 7GB in
+size.</p>
+<h2 id="backups">Backups</h2>
+<p>Taken from my mariadb-vs-postgres blog:<br />
+Backing up 45.000.000 chat messages with mariadb-dump (or the old
+mysqldump command) takes around 1.5minutes.</p>
+<p>Important: During a backup of a MariaDB InnoDB Database the tables
+and data are NOT blocked!<br />
+If you create a backup with the following command:</p>
+<pre><code>mariadb-dump --single-transaction --databases mydatabase &gt; backup.sql</code></pre>
+<p>Then any other connection can still INSERT or SELECT data from the
+tables of this database.<br />
+This is because of the <code>--single-transaction</code> flag, which
+requires the storage engine InnoDB and allows you to do non-blocking
+backups.</p>
+<p><em>Warning: If you insert data during a backup it will not be
+included in it!</em></p>
+<p>If you do not use this flag then a backup blocks INSERT statements
+but you can still use SELECT during it.</p>
+<p>Source:</p>
+<ul>
+<li>Tested myself</li>
+<li><a
+href="https://mariadb.com/docs/server/ref/mdb/cli/mariadb-dump/single-transaction/">https://mariadb.com/docs/server/ref/mdb/cli/mariadb-dump/single-transaction/</a></li>
+<li><a
+href="https://mariadb.com/kb/en/mariadb-dump/#examples">https://mariadb.com/kb/en/mariadb-dump/#examples</a></li>
+</ul>
+<h2 id="performance-for-inserts">Performance for inserts</h2>
+<p>My installation of mariadb was never “tuned for performance”.</p>
+<p>An example of how to raise performance: Set the InnoDB buffer to ~80%
+of your available RAM.</p>
+<p>I have done nothing the like (buffer is at 128MB) and I still get an
+immense performance out of it.</p>
+<p><strong>A short story about an accidental database
+benchmark:</strong></p>
+<p>I am currently storing logs for gameservers.<br />
+The server for storing this has 4 CPU cores and 8GB of RAM with 128MB of
+that being InnoDB buffer.<br />
+They send me logs in 100 lines per request.<br />
+The request flow is: gameserver -&gt; nginx -&gt; golang-webserver -&gt;
+mariadb<br />
+I save all those 100 lines in a single transaction via my golang
+webserver (which uses gin and sqlx)</p>
+<p>One time someone found out how to create an exponential
+damage-creator on a gameserver.<br />
+This created 330.000 log lines in ~15 seconds.<br />
+These were sent via 3.300 requests to me and were successfully
+saved.</p>
+<p>Grafana showed me in a single 15s scrape-tick:</p>
+<ul>
+<li>CPU usage of ~54%</li>
+<li>3300 requests to my golang webserver</li>
+<li>3260 of these requests were done within 10ms</li>
+<li>24Mb/s network traffic</li>
+<li>330.000 new log lines in mariadb</li>
+<li>7.720 QPS (queries per second) on the mariadb</li>
+<li>10MB/s disk R/W</li>
+<li>254 io/s IOps on the disk</li>
+<li>only 2 database connections open from my go webserver</li>
+<li>no crashes, lags or other</li>
+</ul>
+<p>According to the timestamps with which the log lines have been
+inserted into the mariadb it was around 20.000 log lines per second for
+around 15 seconds.<br />
+The SQL used to see this is:</p>
+<pre><code>SELECT COUNT(datetime),datetime FROM logs WHERE datetime BETWEEN &#39;1970-01-02 13:01:00&#39; AND &#39;1970-01-02 13:02:15&#39; GROUP BY datetime;</code></pre>
+<p>Also, the above SQL statement took, in a table with 5 million
+loglines, only 3.8s to complete.</p>
+<p>To summarize this, you do not need to tune for performance as long as
+you do not have more than ~30.000 queries/second consistently.</p>
+<h2 id="performance-for-select-where-like">Performance for SELECT WHERE
+LIKE</h2>
+<p>I have a table with chat messages, one row is one chat message with
+sender,receiver/channel,datetime,id.<br />
+This table has 65630443 messages, counting this takes 15.07s.</p>
+<p>If you now want to count how many chat messages have the word sleep
+in it that will take only 85seconds on average.</p>
+<pre><code>MariaDB [chat]&gt; SELECT COUNT(*) FROM messages WHERE message LIKE &quot;%sleep%&quot;;
++----------+
+| COUNT(*) |
++----------+
+|   112946 |
++----------+
+1 row in set (1 min 25.829 sec)</code></pre>
+<p>Reruns of this query, after restart or after different queries,
+always returns a time-taken of about 85seconds.</p>
+<h2 id="performance-by-using-index">Performance by using index</h2>
+<p>Using an index for an often filtered column can help your performance
+a lot.</p>
+<p>I have a table with logs for different servers. There are around 20
+different server IDs and a total of 20.503.200 rows in the table.</p>
+<p>If you want, for example, all log message that contains the word
+“cheat” on server X you can use the following query:</p>
+<pre><code>MariaDB [llog]&gt; SELECT ts,msg FROM llog WHERE serverid=&quot;X&quot; AND msg LIKE &quot;%cheat%&quot;;
+Empty set (14.329 sec)</code></pre>
+<p>As you can see above, it takes 15seconds to search for this,
+subsequent queries take the same amount of time.</p>
+<p>If you now add a simple index like this:</p>
+<pre><code>MariaDB [llog]&gt; CREATE INDEX llogserverid ON llog(serverid);
+Query OK, 0 rows affected (1 min 52.698 sec)</code></pre>
+<p>The time will be taken down to 0.043s (-99.6%) if you execute the
+same query again:</p>
+<pre><code>MariaDB [llog]&gt; SELECT ts,msg FROM llog WHERE serverid=&quot;X&quot; AND msg LIKE &quot;%cheat%&quot;;
+Empty set (0.043 sec)</code></pre>
+<p>Another example:<br />
+A table with 1.000.000 rows and a column that gets filtered often
+(column is named serverid with around 30 unique values). The application
+executes 5 different queries on this table that all use the
+<code>WHERE serverid="X"</code> filter.</p>
+<p>Before creating an index the request took 0.6s (one of the 5 queries
+took 0.25s alone).<br />
+After creating an index the request took 0.05s (the query above took
+only 0.01s instead).</p>
+<p>This index took 3seconds to create (1mil rows) and dropping the index
+took 3seconds too.</p>
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>mariadb vs postgres | lutia.nl</title>
+  <style>
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">mariadb vs postgres | lutia.nl</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#introduction" id="toc-introduction">Introduction</a></li>
+<li><a href="#comparison" id="toc-comparison">Comparison</a>
+<ul>
+<li><a href="#count" id="toc-count">COUNT(*)</a></li>
+<li><a href="#group-by-date" id="toc-group-by-date">GROUP BY
+DATE</a></li>
+<li><a href="#date-interval" id="toc-date-interval">DATE
+Interval</a></li>
+<li><a href="#backup-restore" id="toc-backup-restore">Backup &amp;
+Restore</a></li>
+</ul></li>
+</ul>
+</nav>
+<p>A comparison of mariadb and postgresql based on chat data.</p>
+<h2 id="introduction">Introduction</h2>
+<p>I wrote a chat bot in Golang that saves messages.<br />
+These tests were run with 161 million chat messages saved.<br />
+The sql table looks as follows (output from mariadb):</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">CREATE</span> <span class="kw">TABLE</span> <span class="cf">IF</span> <span class="kw">NOT</span> <span class="kw">EXISTS</span> messages(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    <span class="kw">id</span> SERIAL,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    streamer <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">user</span> <span class="dt">VARCHAR</span>(<span class="dv">255</span>),</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    message LONGTEXT,</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    intime DATETIME <span class="kw">NOT</span> <span class="kw">NULL</span> <span class="kw">DEFAULT</span> <span class="fu">current_timestamp</span>()</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>) ENGINE<span class="op">=</span>InnoDB</span></code></pre></div>
+<p>The mariadb SERIAL type is a BIG UNSIGNED INT with auto increment and
+index.</p>
+<p>The hardware used:</p>
+<ul>
+<li>Intel(R) Core(TM) i5-7500 CPU @ 3.40GHz</li>
+<li>16GB DDR4 RAM (2400 MT/s)</li>
+<li>256GB NVME SSD (Samsung PM961)</li>
+</ul>
+<p>Database versions (from <code>SELECT VERSION();</code>):</p>
+<ul>
+<li>PostgreSQL 15.8 (Debian 15.8-0+deb12u1) on x86_64-pc-linux-gnu,
+compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit</li>
+<li>10.11.6-MariaDB-0+deb12u1</li>
+</ul>
+<p>The data was initially transfered from mariadb to postgres with
+pgloader.</p>
+<h2 id="comparison">Comparison</h2>
+<h3 id="count">COUNT(*)</h3>
+<p>Query:</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="kw">FROM</span> messages;</span></code></pre></div>
+<p>Output (same for both): <code>161572889</code></p>
+<p>Time taken:</p>
+<table>
+<thead>
+<tr class="header">
+<th>mariadb</th>
+<th>postgresql</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>29.731 sec</td>
+<td>13.196 sec</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="group-by-date">GROUP BY DATE</h3>
+<p>Query:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="op">*</span>), <span class="dt">DATE</span>(intime) <span class="kw">FROM</span> messages <span class="kw">GROUP</span> <span class="kw">BY</span> <span class="dt">DATE</span>(intime);</span></code></pre></div>
+<p>Time taken:</p>
+<table>
+<thead>
+<tr class="header">
+<th>mariadb</th>
+<th>postgresql</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>61.378 sec</td>
+<td>14.194 sec</td>
+</tr>
+</tbody>
+</table>
+<p>This benchmark showed mariadb only using one core at once with 100%
+usage. Postgres used 3 cores at once with 60-100% usage with each
+core.</p>
+<hr />
+<h3 id="date-interval">DATE Interval</h3>
+<p>Query:</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode sql"><code class="sourceCode sql"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="op">//</span>mariadb:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="kw">FROM</span> messages <span class="kw">WHERE</span> intime <span class="op">&gt;=</span> DATE_SUB(NOW(), <span class="dt">INTERVAL</span> <span class="dv">1</span> <span class="dt">DAY</span>);</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="op">//</span>postgres:</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">SELECT</span> <span class="fu">COUNT</span>(<span class="op">*</span>) <span class="kw">FROM</span> messages <span class="kw">WHERE</span> intime <span class="op">&gt;=</span> NOW() <span class="op">-</span> <span class="dt">INTERVAL</span> <span class="st">&#39;1 DAY&#39;</span>;</span></code></pre></div>
+<p>The output was 0 for both systems, which was OK.</p>
+<p>Time taken:</p>
+<table>
+<thead>
+<tr class="header">
+<th>mariadb</th>
+<th>postgresql</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>33.871 sec</td>
+<td>13.458 sec</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h3 id="backup-restore">Backup &amp; Restore</h3>
+<p>Backup and restore commands for each system:</p>
+<table>
+<thead>
+<tr class="header">
+<th>cmd/db</th>
+<th>mariadb</th>
+<th>postgres</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>backup</td>
+<td>mysqldump</td>
+<td>pg_dump</td>
+</tr>
+<tr class="even">
+<td>restore</td>
+<td>mysql</td>
+<td>psql</td>
+</tr>
+</tbody>
+</table>
+<p>Both database systems support the use of non-blocking backups. This
+means that you can create a complete and consistent snapshot of your
+database during ongoing operation without any downtime or waiting
+inserts.</p>
+<p>Source:</p>
+<ul>
+<li><a
+href="https://www.postgresql.org/docs/current/backup-dump.html">https://www.postgresql.org/docs/current/backup-dump.html</a>
+, last paragraph before 26.1.1<br />
+</li>
+<li><a
+href="https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html#option_mysqldump_single-transaction">https://dev.mysql.com/doc/refman/8.0/en/mysqldump.html#option_mysqldump_single-transaction</a></li>
+</ul>
+<p>The times taken:</p>
+<table>
+<thead>
+<tr class="header">
+<th>type</th>
+<th>mariadb</th>
+<th>postgres</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>dump</td>
+<td>2m36.195s</td>
+<td>2m8.843s</td>
+</tr>
+<tr class="even">
+<td>restore</td>
+<td>18m57.465s</td>
+<td>7m21.162s</td>
+</tr>
+</tbody>
+</table>
+<p>Commands used:</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">mariadb-dump</span> <span class="at">--databases</span> chat <span class="op">&gt;</span> mariadb.sql</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">mysql</span> chat <span class="op">&lt;</span> mariadb.sql</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pg_dump</span> chat <span class="op">&gt;</span> postgres.sql</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="ex">psql</span> <span class="at">-d</span> chat <span class="at">-f</span> postgres.sql</span></code></pre></div>
+<p>The mariadb.sql file was 14GB in size, the postgres.sql file was 12GB
+in size.</p>
+<p>Old test with 45 million database rows years prior:</p>
+<table>
+<thead>
+<tr class="header">
+<th>type</th>
+<th>mariadb</th>
+<th>postgres</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>backup</td>
+<td>1:11min</td>
+<td>1:04min</td>
+</tr>
+<tr class="even">
+<td>restore</td>
+<td>10:02min</td>
+<td>2:10min</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

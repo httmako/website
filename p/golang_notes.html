@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="description" content="How to develop better golang applications easily" />
+  <title>golang notes | lutia.nl</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
+    pre > code.sourceCode { white-space: pre; position: relative; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+    pre > code.sourceCode > span:empty { height: 1.2em; }
+    .sourceCode { overflow: visible; }
+    code.sourceCode > span { color: inherit; text-decoration: inherit; }
+    div.sourceCode { margin: 1em 0; }
+    pre.sourceCode { margin: 0; }
+    @media screen {
+    div.sourceCode { overflow: auto; }
+    }
+    @media print {
+    pre > code.sourceCode { white-space: pre-wrap; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+    }
+    pre.numberSource code
+      { counter-reset: source-line 0; }
+    pre.numberSource code > span
+      { position: relative; left: -4em; counter-increment: source-line; }
+    pre.numberSource code > span > a:first-child::before
+      { content: counter(source-line);
+        position: relative; left: -1em; text-align: right; vertical-align: baseline;
+        border: none; display: inline-block;
+        -webkit-touch-callout: none; -webkit-user-select: none;
+        -khtml-user-select: none; -moz-user-select: none;
+        -ms-user-select: none; user-select: none;
+        padding: 0 4px; width: 4em;
+        color: #aaaaaa;
+      }
+    pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+    div.sourceCode
+      {   }
+    @media screen {
+    pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+    }
+    code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+    code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+    code span.at { color: #7d9029; } /* Attribute */
+    code span.bn { color: #40a070; } /* BaseN */
+    code span.bu { color: #008000; } /* BuiltIn */
+    code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+    code span.ch { color: #4070a0; } /* Char */
+    code span.cn { color: #880000; } /* Constant */
+    code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+    code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+    code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+    code span.dt { color: #902000; } /* DataType */
+    code span.dv { color: #40a070; } /* DecVal */
+    code span.er { color: #ff0000; font-weight: bold; } /* Error */
+    code span.ex { } /* Extension */
+    code span.fl { color: #40a070; } /* Float */
+    code span.fu { color: #06287e; } /* Function */
+    code span.im { color: #008000; font-weight: bold; } /* Import */
+    code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+    code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+    code span.op { color: #666666; } /* Operator */
+    code span.ot { color: #007020; } /* Other */
+    code span.pp { color: #bc7a00; } /* Preprocessor */
+    code span.sc { color: #4070a0; } /* SpecialChar */
+    code span.ss { color: #bb6688; } /* SpecialString */
+    code span.st { color: #4070a0; } /* String */
+    code span.va { color: #19177c; } /* Variable */
+    code span.vs { color: #4070a0; } /* VerbatimString */
+    code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+  </style>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">golang notes | lutia.nl</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#advantages-of-using-golang"
+id="toc-advantages-of-using-golang">Advantages of using golang</a></li>
+<li><a href="#tools" id="toc-tools">Tools</a>
+<ul>
+<li><a href="#lint" id="toc-lint">Lint</a></li>
+<li><a href="#vulnerabilities"
+id="toc-vulnerabilities">Vulnerabilities</a></li>
+<li><a href="#inbuilt-tools" id="toc-inbuilt-tools">Inbuilt
+tools</a></li>
+<li><a href="#building" id="toc-building">Building</a></li>
+<li><a href="#post-build" id="toc-post-build">Post-Build</a></li>
+</ul></li>
+<li><a href="#about-golang" id="toc-about-golang">About golang</a>
+<ul>
+<li><a href="#random-facts" id="toc-random-facts">Random facts</a></li>
+<li><a href="#benchmarks" id="toc-benchmarks">Benchmarks</a></li>
+</ul></li>
+<li><a href="#favorite-packages" id="toc-favorite-packages">Favorite
+packages</a>
+<ul>
+<li><a href="#web-framework" id="toc-web-framework">Web
+framework</a></li>
+<li><a href="#databases" id="toc-databases">Databases</a></li>
+<li><a href="#configuration"
+id="toc-configuration">Configuration</a></li>
+<li><a href="#logging" id="toc-logging">Logging</a></li>
+</ul></li>
+<li><a href="#jenkins-pipeline" id="toc-jenkins-pipeline">Jenkins
+pipeline</a></li>
+</ul>
+</nav>
+<h1 id="advantages-of-using-golang">Advantages of using golang</h1>
+<ul>
+<li>It’s default libraries are very fast compared to other programming
+languages like python: <a
+href="https://web-frameworks-benchmark.netlify.app/compare?f=laravel,rails,flask,django,express,spring,nethttp">https://web-frameworks-benchmark.netlify.app/compare?f=laravel,rails,flask,django,express,spring,nethttp</a></li>
+<li>It is very small in filesize, can be statically compiled and uses
+way less RAM than for example Java</li>
+<li>Every update has backwards compatibility, nothing breaks if you need
+to update go itself or modules</li>
+<li>Many companies use it and the “cloud” (Kubernetes/Docker) is built
+with Golang</li>
+</ul>
+<h1 id="tools">Tools</h1>
+<h2 id="lint">Lint</h2>
+<p><a href="https://golangci-lint.run">https://golangci-lint.run</a></p>
+<p><code>golangci-lint</code> is a very easy and simple tool for
+checking your go code.<br />
+To install it run</p>
+<div class="sourceCode" id="cb1"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="at">-sSfL</span> https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh <span class="kw">|</span> <span class="fu">sh</span> <span class="at">-s</span> <span class="at">--</span> <span class="at">-b</span> <span class="va">$(</span><span class="ex">go</span> env GOPATH<span class="va">)</span>/bin v2.2.2</span></code></pre></div>
+<p>To analyze your go project run</p>
+<div class="sourceCode" id="cb2"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">golangci-lint</span> run</span></code></pre></div>
+<p>To see every recommendation you can enable all linters with:</p>
+<div class="sourceCode" id="cb3"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">golangci-lint</span> run <span class="at">--default</span><span class="op">=</span>all .</span></code></pre></div>
+<h2 id="vulnerabilities">Vulnerabilities</h2>
+<p><a
+href="https://go.dev/doc/tutorial/govulncheck">https://go.dev/doc/tutorial/govulncheck</a></p>
+<p>To check for known vulnerabilities in your code or packages you can
+use the <code>govulncheck</code> application.<br />
+To install it run</p>
+<div class="sourceCode" id="cb4"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> install golang.org/x/vuln/cmd/govulncheck@latest</span></code></pre></div>
+<p>To check your project run</p>
+<div class="sourceCode" id="cb5"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">govulncheck</span> ./...</span></code></pre></div>
+<p>If it says “command not found” then verify that you have your home
+folder’s go/bin folder in your path (<code>/home/user/go/bin</code>), if
+not you can use the following to add it:</p>
+<div class="sourceCode" id="cb6"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">PATH</span><span class="op">=</span><span class="va">$PATH</span>:/home/<span class="va">$(</span><span class="fu">whoami</span><span class="va">)</span>/go/bin</span></code></pre></div>
+<h2 id="inbuilt-tools">Inbuilt tools</h2>
+<p>Go has, by default, many tools for testing and linting already
+inbuilt.</p>
+<ul>
+<li>To execute your test cases in <code>*_test.go</code> files use
+<code>go test .</code></li>
+<li>To lint your code you can use <code>go vet .</code></li>
+<li>To check for race conditions you can use -race like
+<code>go run -race .</code></li>
+</ul>
+<h2 id="building">Building</h2>
+<p><a
+href="https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies">https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies</a><br />
+<a
+href="https://medium.com/@diogok/on-golang-static-binaries-cross-compiling-and-plugins-1aed33499671">https://medium.com/<span
+class="citation"
+data-cites="diogok/on-golang-static-binaries-cross-compiling-and-plugins-1aed33499671">@diogok/on-golang-static-binaries-cross-compiling-and-plugins-1aed33499671</span></a><br />
+<a
+href="https://stackoverflow.com/questions/61319677/flags-needed-to-create-static-binaries-in-golang">https://stackoverflow.com/questions/61319677/flags-needed-to-create-static-binaries-in-golang</a></p>
+<p>To build a static executable I personally use the following
+command:</p>
+<div class="sourceCode" id="cb7"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">CGO_ENABLED</span><span class="op">=</span>0 <span class="va">GOOS</span><span class="op">=</span>linux <span class="va">GOARCH</span><span class="op">=</span>amd64 <span class="ex">go</span> build <span class="at">-ldflags</span> <span class="st">&#39;-w -s&#39;</span> .</span></code></pre></div>
+<p>The “ldflags” are only for a smaller executable size, the main magic
+happens with the “CGO_ENABLED=0” at the beginning.<br />
+To verify if an executable is static use the <code>ldd</code>
+command.</p>
+<p>To create an executable for another platform you can provide
+different GOOS/GOARCH variables like the following 32/64bit for
+win/linux:</p>
+<div class="sourceCode" id="cb8"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="va">CGO_ENABLED</span><span class="op">=</span>0 <span class="va">GOOS</span><span class="op">=</span>linux <span class="va">GOARCH</span><span class="op">=</span>amd64 <span class="ex">go</span> build <span class="at">-ldflags</span> <span class="st">&#39;-w -s&#39;</span> <span class="at">-o</span> myapp-linux-amd64 .</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="va">CGO_ENABLED</span><span class="op">=</span>0 <span class="va">GOOS</span><span class="op">=</span>linux <span class="va">GOARCH</span><span class="op">=</span>386 <span class="ex">go</span> build <span class="at">-ldflags</span> <span class="st">&#39;-w -s&#39;</span> <span class="at">-o</span> myapp-linux-386 .</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="va">CGO_ENABLED</span><span class="op">=</span>0 <span class="va">GOOS</span><span class="op">=</span>windows <span class="va">GOARCH</span><span class="op">=</span>amd64 <span class="ex">go</span> build <span class="at">-ldflags</span> <span class="st">&#39;-w -s&#39;</span> <span class="at">-o</span> myapp-windows-amd64 .</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="va">CGO_ENABLED</span><span class="op">=</span>0 <span class="va">GOOS</span><span class="op">=</span>windows <span class="va">GOARCH</span><span class="op">=</span>386 <span class="ex">go</span> build <span class="at">-ldflags</span> <span class="st">&#39;-w -s&#39;</span> <span class="at">-o</span> myapp-windows-386 .</span></code></pre></div>
+<h2 id="post-build">Post-Build</h2>
+<p><a
+href="https://github.com/upx/upx/releases">https://github.com/upx/upx/releases</a></p>
+<p>To make the executable smaller after building you can use
+<code>upx</code>.<br />
+To install it into your <code>~/.local/bin</code> folder you can use the
+following commands:</p>
+<div class="sourceCode" id="cb9"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">wget</span> <span class="at">-qO-</span> https://github.com/upx/upx/releases/download/v4.2.4/upx-4.2.4-amd64_linux.tar.xz <span class="kw">|</span> <span class="fu">tar</span> xJvO upx-4.2.4-amd64_linux/upx <span class="op">&gt;</span> ~/.local/bin/upx</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x ~/.local/bin/upx</span></code></pre></div>
+<p>To minify your executable use the following command (after building
+it with go build):</p>
+<div class="sourceCode" id="cb10"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">upx</span> <span class="at">--best</span> myapp</span></code></pre></div>
+<h1 id="about-golang">About golang</h1>
+<h2 id="random-facts">Random facts</h2>
+<ul>
+<li>net/http (default http server) is multithreaded by default ; <a
+href="https://pkg.go.dev/net/http#Server.Serve">https://pkg.go.dev/net/http#Server.Serve</a></li>
+<li>database/sql (and any database module that uses the same interface)
+is connection-pooling and thread-safe by default ; <a
+href="https://pkg.go.dev/database/sql#DB">https://pkg.go.dev/database/sql#DB</a></li>
+<li>defer will be called even if a panic occurs and is “last in -&gt;
+first out” ; <a
+href="https://go.dev/blog/defer-panic-and-recover">https://go.dev/blog/defer-panic-and-recover</a></li>
+<li>sync.Map is a thread-safe alternative to a “default map[int]int”,
+which is not thread-safe ; <a
+href="https://pkg.go.dev/sync#Map">https://pkg.go.dev/sync#Map</a></li>
+<li>using a mutex with a default map is faster than using a
+sync.Map</li>
+</ul>
+<h2 id="benchmarks">Benchmarks</h2>
+<p>Documentation: <a
+href="https://pkg.go.dev/testing#hdr-Benchmarks">https://pkg.go.dev/testing#hdr-Benchmarks</a></p>
+<p>You can easily do benchmarks in go. This is done via _test.go
+files.<br />
+Example: You have a file named <code>main_test.go</code> and it contains
+the following lines:</p>
+<div class="sourceCode" id="cb11"><pre
+class="sourceCode go"><code class="sourceCode go"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">package</span> main</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> <span class="op">(</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;testing&quot;</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">&quot;sync&quot;</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="op">)</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> BenchmarkMap<span class="op">(</span>b <span class="op">*</span>testing<span class="op">.</span>B<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> b<span class="op">.</span>Loop<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=</span> <span class="kw">map</span><span class="op">[</span><span class="dt">string</span><span class="op">]</span><span class="dt">string</span><span class="op">{}</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="kw">func</span> BenchmarkSyncMap<span class="op">(</span>b <span class="op">*</span>testing<span class="op">.</span>B<span class="op">)</span> <span class="op">{</span></span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> b<span class="op">.</span>Loop<span class="op">()</span> <span class="op">{</span></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>        _ <span class="op">=</span> sync<span class="op">.</span>Map<span class="op">{}</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="op">}</span></span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code></pre></div>
+<p>The above <code>main_test.go</code> file has 2 benchmarks that
+compare the creation of a sync map and a default map.</p>
+<p>To run this benchmark you can use the following command:</p>
+<div class="sourceCode" id="cb12"><pre
+class="sourceCode bash"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">go</span> test <span class="at">-benchmem</span> <span class="at">-bench</span><span class="op">=</span>.</span></code></pre></div>
+<p>The output is (on my machine):</p>
+<pre><code>goos: windows
+goarch: amd64
+pkg: a
+cpu: 11th Gen Intel(R) Core(TM) i7-11700 @ 2.50GHz
+BenchmarkMap-16         180920814                6.582 ns/op           0 B/op          0 allocs/op
+BenchmarkSyncMap-16     1000000000               1.000 ns/op           0 B/op          0 allocs/op
+PASS
+ok      a       5.862s</code></pre>
+<h1 id="favorite-packages">Favorite packages</h1>
+<p>After programming with go for years I have come to like a few
+specific packages or solutions to problems.<br />
+This is a short list of packages I can personally recommend using.</p>
+<h2 id="web-framework">Web framework</h2>
+<p>If you only have to write a small REST API or a single-page status
+site then I recommend using the inbuilt <code>net/http</code> package
+with the inbuilt <code>html/template</code> package if needed.</p>
+<p>For bigger projects I can recommend gin: <a
+href="https://pkg.go.dev/github.com/gin-gonic/gin">https://pkg.go.dev/github.com/gin-gonic/gin</a><br />
+It is very easy to use, fast and has a lot functions inbuilt that you
+would need to code anyways (e.g. logging middleware).</p>
+<h2 id="databases">Databases</h2>
+<p>My current database system is a <code>mariadb</code>, which means I
+can only use and recommend <a
+href="https://github.com/go-sql-driver/mysql">https://github.com/go-sql-driver/mysql</a>.<br />
+It has never failed me and works perfectly, auto reconnecting and
+pooling of connections has never created any problems for me.</p>
+<p>For postgres I use <a
+href="github.com/lib/pq">github.com/lib/pq</a>.<br />
+It uses the database/sql interface, which means everything is the same
+as always and no code needs to be changed if you do a mysql-&gt;postgres
+switch.<br />
+(I can not recommend “github.com/uptrace/bun/driver/pgdriver” anymore
+because it had problems with parsing multiline sql from files.)</p>
+<p>If you need more functions than the default <code>database/sql</code>
+package can provide then I can recommend <code>sqlx</code>: <a
+href="https://github.com/jmoiron/sqlx">https://github.com/jmoiron/sqlx</a>.<br />
+You can easily read sql into structs and write structs into sql and you
+can use it with any database driver.</p>
+<h2 id="configuration">Configuration</h2>
+<p>For configuring applications I use 3 different packages:</p>
+<ul>
+<li>the inbuilt <code>flag</code> package for commandline flags: <a
+href="https://pkg.go.dev/flag">https://pkg.go.dev/flag</a><br />
+</li>
+<li>the inbuilt <code>os</code> package for environment variables: <a
+href="https://pkg.go.dev/os#LookupEnv">https://pkg.go.dev/os#LookupEnv</a></li>
+<li>the k8s yaml package for yaml config files: <a
+href="https://pkg.go.dev/sigs.k8s.io/yaml">https://pkg.go.dev/sigs.k8s.io/yaml</a></li>
+</ul>
+<p>I personally enjoy yaml config files the most because they support
+comments (which json doesn’t) and are very easy to write and read (which
+xml doesn’t).</p>
+<p>Passwords are provided by environment, the rest are either configured
+via flags or config file.</p>
+<h2 id="logging">Logging</h2>
+<p>At the beginning I was using the inbuilt <code>log</code> module,
+then uber’s <code>zap</code> module and I now ended up using the inbuilt
+<code>log/slog</code> package.<br />
+The <code>slog</code> package supports structured logging with different
+levels (info,error,etc.) and can log to different formats
+(logfmt,json,plain) and locations (stdout,file).</p>
+<p>If your application doesn’t log much then simple <code>fmt</code>
+prints could be enough aswell, e.g. for commandline applications I
+prefer to just print information in plaintext instead of using a
+logger.</p>
+<p>In a cloud environment you should always log to stdout. Containers do
+not keep data when being restarted, which means your logs would get lost
+afterwards. Docker and Kubernetes manage your stdout prints of your
+containers and log them to a more persistent place themselves, so the
+only thing you have to do is log to stdout and let them take care of the
+rest.</p>
+<h1 id="jenkins-pipeline">Jenkins pipeline</h1>
+<p>With the above tools combined, my current jenkins pipeline looks like
+this:</p>
+<pre><code>pipeline {
+    agent any
+    tools { go &#39;go1.22.2&#39; }
+    stages {
+        stage(&#39;GitPull&#39;) {
+            steps {
+                git credentialsId: &#39;11111111-1111-4111-1111-111111111111&#39;, url: &#39;http://10.0.0.2/git/me/testproject.git&#39;
+            }
+        }
+        stage(&#39;Test&#39;) {
+            steps {
+                sh &#39;go version&#39;
+                sh &#39;go test&#39;
+            }
+        }
+        stage(&#39;Lint&#39;) {
+            steps {
+                sh &#39;curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | bash -s -- -b . v1.58.1&#39;
+                sh &#39;./golangci-lint run&#39;
+                sh &#39;go vet ./...&#39;
+            }
+        }
+        stage(&#39;VulnCheck&#39;) {
+            steps {
+                sh &#39;GOBIN=$GOROOT/bin go install golang.org/x/vuln/cmd/govulncheck@latest&#39;
+                sh &#39;govulncheck ./...&#39;
+            }
+        }
+        stage(&#39;Build&#39;) {
+            steps {
+                sh &#39;go build .&#39;
+            }
+        }
+    }
+}</code></pre>
+</body>
+</html>

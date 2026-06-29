@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Modify Abilities | lutia.nl</title>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+    <h2>Modify Abilities with CE</h2>
+    <h3>Introduction</h3>
+    <p>There are countless abilities in KH2FM, some are good, like Combo Boost and the Form Abilities, and some are bad, like the Auto Form Abilities. How about we change the bad ones to good ones?<br>
+    This article will explain how to change abilities with Cheat Engine on PCSX2.</p>
+    <br>
+    <h3>Setup and Basics</h3>
+    <p>First, open PCSX2 and Cheat Engine. If you don't have Cheat engine, you can download the newest version of Cheat engine here. On Cheat Engine select "Memory View" beneath the list of addresses on the left, which should open a list of addresses and data in a new window. Now right click on the Addresses on the left bottom in the "Memory Viewer" window and go to Display Type and select "4 byte hex". Now, if you didn't do it already, load up a KH2FM game and load a savegame. Now you right click the Memory Viewer again, right click anywhere on the bottom half and select the second option "Goto address". There you type "2032E060" and click on "OK". Now you should see a lot of numbers starting with 8 or 0 in the middle. These are the abilities which you currently posses.<br>
+    Now, what are these splitted "Words" in the middle? Here's an Explanation:</p>
+    <div><img alt="" src="article_pictures/CE_Ability_Explained.png"></div>
+    <p>If you want to find out which Ability has which ID, just turn them off and on in the game and look at the changes in the Memory Viewer; It should turn Red on change:</p>
+    <div>
+    <video autoplay loop muted playsinline>
+        <source src="article_pictures/CE_Finding_Address.mp4" type="video/mp4">
+    </video>
+    </div>
+    <br>
+    <h3>Changing the Abilities</h3>
+    <p>To change an Ability you have to Click on the Address-Block to select it, which should change the Word into a blue highlight-like color. Now Right-Click on it and choose the Third last option named "Add this address to the list". This adds the currently selected Address to your Cheat Engine list in the main window on the bottom. After you confirmed the small window with "OK" you have to switch back to your main Cheat Engine window. Now you can see your address on the bottom, but its content is shown in Decimal. To change it click on the newly created entry from you and select "show as hexadecimal", which should be the 5th option from the top. Now you can Double-Click the hex value on the right and change the ID of the Ability.
+    <br>
+    Warning: The Abilities don't have a fixed spot, they basically fill these addresses the same order as you receive them! They don't have to be in the same spot on every savegame, so saying that the ability "Lucky Lucky" has the address "XXXXX" is wrong, It could change from save to save!
+    <br>
+    Thanks for reading. Here an example of having 20 Combo Boosts equipped at once:</p>
+    <div>
+    <video autoplay loop muted playsinline>
+        <source src="article_pictures/CE_ComboBoost.mp4" type="video/mp4">
+    </video>
+    </div>
+</body>
+</html>
