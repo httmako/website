@@ -1,5 +1,5 @@
 ---
-title: mariadb vs postgres | lutia.nl
+title: mariadb vs postgres
 toc: true
 header-includes:
     <link rel="stylesheet" href="/style.css">

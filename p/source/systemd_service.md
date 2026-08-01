@@ -1,5 +1,5 @@
 ---
-title: systemd services | lutia.nl
+title: systemd services
 toc: true
 lang: en
 description: Shows examples for secure systemd .service files

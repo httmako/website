@@ -1,5 +1,5 @@
 ---
-title: golang notes | lutia.nl
+title: golang notes
 toc: true
 lang: en
 description: How to develop better golang applications easily

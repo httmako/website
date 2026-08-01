@@ -1,8 +1,8 @@
 ---
-title: local k8s with k0s | lutia.nl
+title: local k8s with k0s
 toc: true
 header-includes:
-    <link rel="stylesheet" href="https://lutia.nl/style.css">
+    <link rel="stylesheet" href="/style.css">
 ---
 
 # About this page

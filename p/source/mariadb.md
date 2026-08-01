@@ -1,5 +1,5 @@
 ---
-title: mariadb | lutia.nl
+title: mariadb
 toc: true
 header-includes:
     <link rel="stylesheet" href="/style.css">

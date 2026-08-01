@@ -1,10 +1,10 @@
 ---
-title: selinux | lutia.nl
+title: selinux
 toc: true
 lang: en
 description: Shows common selinux commands and troubleshoot tips
 header-includes:
-    <link rel="stylesheet" href="https://lutia.nl/style.css">
+    <link rel="stylesheet" href="/style.css">
 ---
 
 
