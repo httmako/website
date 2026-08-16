@@ -7,7 +7,9 @@
   <meta name="description" content="Shows examples for secure systemd .service files" />
   <title>systemd services</title>
   <style>
-    code{white-space: pre-wrap;}
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
     span.smallcaps{font-variant: small-caps;}
     div.columns{display: flex; gap: min(4vw, 1.5em);}
     div.column{flex: auto; overflow-x: auto;}
@@ -23,8 +25,9 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
     /* CSS for syntax highlighting */
+    html { -webkit-text-size-adjust: 100%; }
     pre > code.sourceCode { white-space: pre; position: relative; }
-    pre > code.sourceCode > span { line-height: 1.25; }
+    pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
     pre > code.sourceCode > span:empty { height: 1.2em; }
     .sourceCode { overflow: visible; }
     code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -35,7 +38,7 @@
     }
     @media print {
     pre > code.sourceCode { white-space: pre-wrap; }
-    pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+    pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
     }
     pre.numberSource code
       { counter-reset: source-line 0; }
@@ -112,6 +115,8 @@ RootDirectory=</a></li>
 <li><a href="#troubleshooting-exited-processes"
 id="toc-troubleshooting-exited-processes">Troubleshooting exited
 processes</a></li>
+<li><a href="#pre-start-scripts" id="toc-pre-start-scripts">Pre-Start
+scripts</a></li>
 </ul></li>
 </ul>
 </nav>
@@ -222,76 +227,80 @@ class="sourceCode bash"><code class="sourceCode bash"><span id="cb2-1"><a href="
 <span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Delay between restarts, 1m = 1minute</span></span>
 <span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="va">RestartSec</span><span class="op">=</span>1m</span>
 <span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a><span class="co"># You could also set environment variables like this:</span></span>
-<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="co">#Environment=USER=x HOME=/home/x</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a><span class="va">Environment</span><span class="op">=</span>USER=x <span class="va">HOME</span><span class="op">=</span>/home/x <span class="va">ES_HOME</span><span class="op">=</span>/opt/es</span>
 <span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a><span class="co"># Hardening from now on</span></span>
 <span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable counting of IP bytes in and out for the service</span></span>
-<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="va">IPAccounting</span><span class="op">=</span>yes</span>
-<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Only allow sockets, IPv4 and IPv6 as network protocols</span></span>
-<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictAddressFamilies</span><span class="op">=</span>AF_UNIX <span class="ex">AF_INET</span> AF_INET6</span>
-<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># The following 2 lines enable an IP whitelist for this service</span></span>
-<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co"># This allows this application to only communicate with the localhost, neither requests from nor to the internet are allowed</span></span>
-<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressDeny</span><span class="op">=</span>any</span>
-<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressAllow</span><span class="op">=</span>127.0.0.0/8</span>
-<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># You can also disable all network traffic with PrivateNetwork</span></span>
-<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># PrivateNetwork=true</span></span>
-<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Service can no longer gain privileges via e.g. setuid or fs caps</span></span>
-<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="va">NoNewPrivileges</span><span class="op">=</span>true</span>
-<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Creates new /tmp and /var/tmp directories for this process. After this systemd service stops these tmp folders will be removed!</span></span>
-<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateTmp</span><span class="op">=</span>true</span>
-<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Filesystem namespacing, doesn&#39;t propagate mounts to this process</span></span>
-<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateMounts</span><span class="op">=</span>true</span>
-<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables /dev/sda,mem,port,etc.</span></span>
-<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateDevices</span><span class="op">=</span>true</span>
-<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes /usr,/boot,/efi,/etc read-only, but can still write to /tmp,/srv</span></span>
-<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="co"># Set this to &quot;strict&quot; to make the whole filesystem read-only</span></span>
-<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectSystem</span><span class="op">=</span>full</span>
-<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="co"># Hide /home,/root and /run/user (inaccessible and empty)</span></span>
-<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHome</span><span class="op">=</span>true</span>
-<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Make cgroups read-only (only container managers use write) and disallow namespace creation</span></span>
-<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectControlGroups</span><span class="op">=</span>true</span>
-<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictNamespaces</span><span class="op">=</span>true</span>
-<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="co"># Prevents hostname and clock changes</span></span>
-<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHostname</span><span class="op">=</span>true</span>
-<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectClock</span><span class="op">=</span>true</span>
-<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="co"># Set umask of files created by service&#39;s application (u=rwx, go=nothing)</span></span>
-<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="va">UMask</span><span class="op">=</span>0077</span>
-<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove IPC after service is stopped</span></span>
-<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="va">RemoveIPC</span><span class="op">=</span>true</span>
-<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Protect kernel variables and modules</span></span>
-<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelTunables</span><span class="op">=</span>true</span>
-<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelModules</span><span class="op">=</span>true</span>
-<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="co"># Only lets the process see itself in /proc/</span></span>
-<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="va">ProcSubset</span><span class="op">=</span>pid</span>
-<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectProc</span><span class="op">=</span>noaccess</span>
-<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables setting SUID/SGID on files</span></span>
-<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictSUIDSGID</span><span class="op">=</span>true</span>
-<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove all root capabilities (bind port &lt; 1024, ignore file perms, etc.)</span></span>
-<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="va">CapabilityBoundingSet</span><span class="op">=</span></span>
-<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># Files not owned by you appear to be owned by &quot;nobody&quot; (or root)</span></span>
-<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateUsers</span><span class="op">=</span>true</span>
-<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Disallow access to syslog</span></span>
-<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelLogs</span><span class="op">=</span>true</span>
-<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes directories invisible for the process. Warning, some processes need those! (or use ReadOnlyPaths=)</span></span>
-<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="va">InaccessiblePaths</span><span class="op">=</span>/bin <span class="ex">/boot</span> /lib /lib64 /media /mnt /opt /root /sbin /usr /var</span>
-<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable specific syscalls (setting clock, tracing, kernel-modules, mounting, rebooting, root-only, changing sawp, emulating other CPUs, obsolete calls)</span></span>
-<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="va">SystemCallFilter</span><span class="op">=</span>~@clock <span class="ex">@debug</span> @module @mount @reboot @privileged @swap @cpu-emulation @obsolete</span>
-<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable changing kernel-exec-domain and realtime execution (could hog cpu)</span></span>
-<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="va">LockPersonality</span><span class="op">=</span>true</span>
-<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictRealtime</span><span class="op">=</span>true</span>
-<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="co"># Redirect the stdout and stderror to a file</span></span>
-<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="va">StandardOutput</span><span class="op">=</span>append:/srv/myrestapi/stdout.log</span>
-<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a><span class="va">StandardError</span><span class="op">=</span>inherit</span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable counting of CPU ms used</span></span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a><span class="va">CPUAccounting</span><span class="op">=</span>yes</span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co"># Limit the CPU usage to 50% of a SINGLE CORE, set it to e.g. 200% to only use 2 cores max. of your system</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="va">CPUQuota</span><span class="op">=</span>50%</span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co"># Enable counting of IP bytes in and out for the service</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="va">IPAccounting</span><span class="op">=</span>yes</span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co"># Only allow sockets, IPv4 and IPv6 as network protocols</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictAddressFamilies</span><span class="op">=</span>AF_UNIX <span class="ex">AF_INET</span> AF_INET6</span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a><span class="co"># The following 2 lines enable an IP whitelist for this service</span></span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a><span class="co"># This allows this application to only communicate with the localhost, neither requests from nor to the internet are allowed</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressDeny</span><span class="op">=</span>any</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a><span class="va">IPAddressAllow</span><span class="op">=</span>127.0.0.0/8</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a><span class="co"># You can also disable all network traffic with PrivateNetwork</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a><span class="co"># PrivateNetwork=true</span></span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="co"># Service can no longer gain privileges via e.g. setuid or fs caps</span></span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a><span class="va">NoNewPrivileges</span><span class="op">=</span>true</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a><span class="co"># Creates new /tmp and /var/tmp directories for this process. After this systemd service stops these tmp folders will be removed!</span></span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateTmp</span><span class="op">=</span>true</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a><span class="co"># Filesystem namespacing, doesn&#39;t propagate mounts to this process</span></span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateMounts</span><span class="op">=</span>true</span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables /dev/sda,mem,port,etc.</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateDevices</span><span class="op">=</span>true</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes /usr,/boot,/efi,/etc read-only, but can still write to /tmp,/srv</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a><span class="co"># Set this to &quot;strict&quot; to make the whole filesystem read-only</span></span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectSystem</span><span class="op">=</span>full</span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a><span class="co"># Hide /home,/root and /run/user (inaccessible and empty)</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHome</span><span class="op">=</span>true</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a><span class="co"># Make cgroups read-only (only container managers use write) and disallow namespace creation</span></span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectControlGroups</span><span class="op">=</span>true</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictNamespaces</span><span class="op">=</span>true</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a><span class="co"># Prevents hostname and clock changes</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectHostname</span><span class="op">=</span>true</span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectClock</span><span class="op">=</span>true</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a><span class="co"># Set umask of files created by service&#39;s application (u=rwx, go=nothing)</span></span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a><span class="va">UMask</span><span class="op">=</span>0077</span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove IPC after service is stopped</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="va">RemoveIPC</span><span class="op">=</span>true</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a><span class="co"># Protect kernel variables and modules</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelTunables</span><span class="op">=</span>true</span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelModules</span><span class="op">=</span>true</span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co"># Only lets the process see itself in /proc/</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a><span class="va">ProcSubset</span><span class="op">=</span>pid</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectProc</span><span class="op">=</span>noaccess</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a><span class="co"># Disables setting SUID/SGID on files</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictSUIDSGID</span><span class="op">=</span>true</span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a><span class="co"># Remove all root capabilities (bind port &lt; 1024, ignore file perms, etc.)</span></span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a><span class="va">CapabilityBoundingSet</span><span class="op">=</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a><span class="co"># Files not owned by you appear to be owned by &quot;nobody&quot; (or root)</span></span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a><span class="va">PrivateUsers</span><span class="op">=</span>true</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a><span class="co"># Disallow access to syslog</span></span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a><span class="va">ProtectKernelLogs</span><span class="op">=</span>true</span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a><span class="co"># Makes directories invisible for the process. Warning, some processes need those! (or use ReadOnlyPaths=)</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a><span class="va">InaccessiblePaths</span><span class="op">=</span>/bin <span class="ex">/boot</span> /lib /lib64 /media /mnt /opt /root /sbin /usr /var</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable specific syscalls (setting clock, tracing, kernel-modules, mounting, rebooting, root-only, changing sawp, emulating other CPUs, obsolete calls)</span></span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a><span class="va">SystemCallFilter</span><span class="op">=</span>~@clock <span class="ex">@debug</span> @module @mount @reboot @privileged @swap @cpu-emulation @obsolete</span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a><span class="co"># Disable changing kernel-exec-domain and realtime execution (could hog cpu)</span></span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a><span class="va">LockPersonality</span><span class="op">=</span>true</span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a><span class="va">RestrictRealtime</span><span class="op">=</span>true</span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="co"># Chroot&#39;s the process into the directory.</span></span>
-<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning: This doesn&#39;t work well for non-static binaries because of missing /lib!</span></span>
-<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="co"># RootDirectory=/srv/myrestapi</span></span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a><span class="co"># Redirect the stdout and stderror to a file</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a><span class="va">StandardOutput</span><span class="op">=</span>append:/srv/myrestapi/stdout.log</span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a><span class="va">StandardError</span><span class="op">=</span>inherit</span>
 <span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="ex">[Install]</span></span>
-<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="va">WantedBy</span><span class="op">=</span>multi-user.target</span></code></pre></div>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a><span class="co"># Chroot&#39;s the process into the directory.</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a><span class="co"># Warning: This doesn&#39;t work well for non-static binaries because of missing /lib!</span></span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a><span class="co"># RootDirectory=/srv/myrestapi</span></span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a><span class="ex">[Install]</span></span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a><span class="va">WantedBy</span><span class="op">=</span>multi-user.target</span></code></pre></div>
 <p>The above is an example of a systemd service file with nearly all of
 the security features activated.<br />
 If you use the chroot (RootDirectory=) and User= settings above then
@@ -362,5 +371,23 @@ Common mistakes are:</p>
 </ul>
 <p>Logs are available by either accessing the stdout.log file or by
 using <code>journalctl -xe</code> to see the systemd stop reason.</p>
+<h2 id="pre-start-scripts">Pre-Start scripts</h2>
+<p>Sometimes you run a script before a service starts, like an init
+container in kubernetes.<br />
+This can be easily achieved by adding the following in your Service
+block:</p>
+<pre><code>ExecStartPre=+/srv/root_mount_all.sh</code></pre>
+<p>The plus symbol infront executes the script as root, no matter what
+user setting is configured for the service itself.<br />
+This is good for services that run as non-root but need a startup script
+that uses root privileges.</p>
+<p>You could also use a “Require=” or “After=” and put the startup
+script into its own service.<br />
+This has one major problem: if the “Require=” component of your service
+does not succeed, then your service never starts.<br />
+This also means: If your init service restarts and it succeeds, your
+application service never starts, because the AutoRestart functionality
+only triggers after the Require/After blocks succeed on the first
+try.</p>
 </body>
 </html>

@@ -223,3 +223,21 @@ Common mistakes are:
  - Unable to resolve DNS (e.g. localhost->127.0.0.1) because of `RootDirectory=` (=chroot)
 
 Logs are available by either accessing the stdout.log file or by using `journalctl -xe` to see the systemd stop reason.
+
+
+## Pre-Start scripts
+
+Sometimes you run a script before a service starts, like an init container in kubernetes.  
+This can be easily achieved by adding the following in your Service block:
+
+```
+ExecStartPre=+/srv/root_mount_all.sh
+```
+
+The plus symbol infront executes the script as root, no matter what user setting is configured for the service itself.  
+This is good for services that run as non-root but need a startup script that uses root privileges.  
+
+You could also use a "Require=" or "After=" and put the startup script into its own service.  
+This has one major problem: if the "Require=" component of your service does not succeed, then your service never starts.  
+This also means: If your init service restarts and it succeeds, your application service never starts, because the AutoRestart functionality only triggers after the Require/After blocks succeed on the first try.
+
