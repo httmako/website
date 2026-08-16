@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <meta name="description" content="Learnings and notes about elasticsearch" />
+  <title>elasticsearch notes</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">elasticsearch notes</h1>
+</header>
+<nav id="TOC" role="doc-toc">
+<ul>
+<li><a href="#about-logging-and-data-streams"
+id="toc-about-logging-and-data-streams">About logging and data
+streams</a></li>
+<li><a href="#recommendations-for-settings"
+id="toc-recommendations-for-settings">Recommendations for
+settings</a></li>
+<li><a href="#recommendations-for-filebeat"
+id="toc-recommendations-for-filebeat">Recommendations for
+filebeat</a></li>
+<li><a href="#debugging" id="toc-debugging">Debugging</a></li>
+<li><a href="#mapping-problems" id="toc-mapping-problems">Mapping
+problems</a></li>
+</ul>
+</nav>
+<h1 id="about-logging-and-data-streams">About logging and data
+streams</h1>
+<p>If you only use elasticsearch for storing logs of applications, I
+highly recommend using a “Data Stream” with the LogsDB index mode
+instead of a normal index with default settings.</p>
+<p>A normal index, if interrupted during lifecycling or with a wrong
+alias configuration, can create errors or problems further down the line
+that data streams do not have. A data stream takes care of handling the
+write and read indices automatically, no need to correctly name
+anything. You can create a data stream called “infra” and the writes
+automatically go to the write index called “.ds-infra-xxx”.</p>
+<p>With a data stream you can also automatically route unindexable data
+to a failure stream (.fs-infra-xxx) which easily shows if documents have
+been rejected due to mapping problems.<br />
+This can be used to create another alert for unindexable data with for
+example elasticsearch_exporter.</p>
+<h1 id="recommendations-for-settings">Recommendations for settings</h1>
+<p>Split logs with the mindset “separation of concerns”.<br />
+You can grant read/write permission to singular data streams or
+indices.</p>
+<p>Have one data stream for the applications you host (e.g. named apps)
+and one data stream for infrastructure and platform/cloud logs
+(e.g. named infra).<br />
+This way your developers look into one section and the infrastructure
+team looks into a different section to easier find problems and have
+less mapping conflicts.</p>
+<p>Elasticsearch can store millions of logs per hour, but splitting it
+up into test/prod is still good practice.<br />
+Have atleast 2 clusters with as many nodes as needed so that no data
+node is more than 80% full if running for a month already (at full
+load).</p>
+<p>The time to keep logs always depends on the use case, but as an
+example, you can keep all logs for 1 month and special short-lived ones
+for 2 weeks.<br />
+On the test environments, where many different versions are built
+quickly, keeping logs only for 2 weeks or even 1 week is also valid.</p>
+<p>After running and testing, one primary shard and one replica is
+enough to satisfy high availability. Even during updates, if a data node
+dies, another node still has the data. After nearly 2 years of running 4
+clusters, no data loss was ever encountered with this setup.<br />
+I would recommend always having 1 replica shard, because if a node with
+the only shard gets rebooted during an update, it could looes the data
+forever.</p>
+<p>The rollover policy can be configured as a one-size-fits-all with a
+max primary shard size of 10GB and a max-age of 1day. This way you have
+atleast one index everyday and at max ~20GB of size per index. (20
+because one primary and one replica shard, each being 10GB)<br />
+This can create many indices per day in production environments, but one
+data node can have up to 1000 shards, so it shouldn’t be a problem, even
+with hundreds of millions of log lines per day.<br />
+Source: <a
+href="https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/size-shards">https://www.elastic.co/docs/deploy-manage/production-guidance/optimize-performance/size-shards</a></p>
+<p>After rolling over into the warm tier it is acceptable to skip the
+cold tier and just delete the index after 30 days.<br />
+Warm tier should use best-compression, read-only and 1primary/1replica
+settings.</p>
+<h1 id="recommendations-for-filebeat">Recommendations for filebeat</h1>
+<p>Elasticsearch is a monolith, if you add overhead via pipelines to it
+you have a centralized bottleneck.<br />
+It is easier and more efficient to add logic/pipelines to filebeat
+instead. This distributes CPU load more efficiently away from
+elasticsearch, enabling it to store and handle more logs.</p>
+<p>If, for example, you have a field that you want in 2 different types,
+then you should convert it in Filebeat on the endpoint. This means
+elasticsearch does not have to do anything but save the logs it
+receives.</p>
+<p>This also enables easier management of configuration because
+redeploying filebeat for configuration changes is easier than
+elasticsearch.</p>
+<p>Filebeat has a javascript processor, which means it can do any and
+all custom logic on the logs it reads.<br />
+Calling javascript code in filebeat (which was written in Golang) takes
+more CPU than the default processors it provides.<br />
+Every “script” processor should have an “if” block infront of it so it
+only gets called for the logs it actually needs to process, using less
+CPU and memory.</p>
+<h1 id="debugging">Debugging</h1>
+<p>If the cluster is experiencing problems it will be visible by the
+health endpoint.<br />
+Green means everything is ok. Yellow means something is requiring
+attention, but nothing serious. A cluster can sometimes be yellow for a
+short duration. Red means shit just hit the fan and requires manual
+fixing.</p>
+<p>It is a good practice to monitor the cluster health and alert if it
+stays on non-green for 5minutes.<br />
+This can be easily done with, for example, Grafana, prometheus and
+elasticsearch_exporter.</p>
+<p>If the cluster is yellow, an easy way to check what is wrong is to go
+to the dev tools and:</p>
+<ul>
+<li>Check cluster health again to verify status</li>
+<li>Show nodes and see if any is missing</li>
+<li>Check shard status and see if any are unassigned</li>
+<li>Check random unassigned shard to see why they are unassigned</li>
+</ul>
+<p>This can be done with the following dev tools commands:</p>
+<pre><code>GET _cluster/health
+GET _cat/nodes?v&amp;h=ip,ram.percent,cpu,node.role,master,name
+GET _cat/shards?v&amp;h=index,prirep,state,docs,store.node&amp;s=state,index
+GET _cluster/allocation/explain?pretty</code></pre>
+<p>If any shard is unassigned and you think it is a mistake, you can
+retry the operation with:</p>
+<pre><code>POST /_cluster/reroute?retry_failed</code></pre>
+<h1 id="mapping-problems">Mapping problems</h1>
+<p>If multiple applications log into the same index it can create
+mapping problems. Example:</p>
+<ul>
+<li>Application 1 logs json with ‘{“host”:{“name”:“host1”}}’</li>
+<li>Application 2 logs json with ‘{“host”:“host2”}’</li>
+</ul>
+<p>This creates a mapping problem because the field is both an object
+and a text field.<br />
+This is not supported in elastic and one of the 2 log lines will be
+rejected and not saved.<br />
+The rejected log line will end up in the failure stream if you are using
+data streams. The “error.message” field in the failure stream will show
+the errornous field in question.</p>
+<p>To fix this you can update your filebeat configuration and correctly
+re-map the field.<br />
+Example with a script/javascript processor in the filebeat config:</p>
+<pre><code>- if.has_fields: [&quot;host&quot;]
+  then:
+    - script:
+        lang: javascript
+        source: &gt;
+          function process(event) {
+            var constTemp = event.Get(&quot;host&quot;);
+            if (typeof(constTemp) == &quot;string&quot;) {
+              event.Delete(&quot;host&quot;);
+              event.Put(&quot;host.name&quot;, constTemp);
+            }
+          }</code></pre>
+<p>This, ofcourse, puts unnecessary load onto filebeat. Such mapping
+errors should be fixed in the application’s logging logic, but that is
+not always a quick or easy fix.<br />
+If you are collecting logs from e.g. AWS or akamai then you can also
+create new data streams for them so that their logs do not interfere or
+create mapping problems with your application logs.</p>
+</body>
+</html>
