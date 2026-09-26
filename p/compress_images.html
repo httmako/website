@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>compressing media</title>
+<title>compressing images</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta http-equiv="content-type" content="text/html; charset=utf-8">
 <link rel="stylesheet" href="/style.css">
@@ -14,15 +14,13 @@ table, th, td {
 </style>
 </head>
 <body>
-<h1>Compressing pictures and videos</h1>
+<h1>Compressing images</h1>
 
 <ul>
 <li><a href="#preamble">Preamble</a></li>
 <li><a href="#images-jpg">Compressing .jpg images</a></li>
 <li><a href="#images-png">Compressing .png images</a></li>
-<li><a href="#videos">Compressing videos</a></li>
-<li><a href="#videocodecs">Different video codecs</a></li>
-<li><a href="#gpuencoding">About GPU encoding</a></li>
+<li><a href="#jpeg-levels">About jpeg quality settings</a></li>
 <li><a href="#iso">ISO images and 7zip</a></li>
 <li><a href="#converting">Converting images</a></li>
 <li><a href="#externals">About external websites</a></li>
@@ -30,9 +28,9 @@ table, th, td {
 
 <h3 id="preamble">Preamble</h3>
 <p>
-This article explains how to reduce the filesize of videos and pictures.<br>
+This article explains how to reduce the filesize of pictures.<br>
 This is not an analysis about the different compression methods or how they compare in their algorithm against each other.<br>
-This is a simple comparison of my own experiments and methods on how to reduce filesizes.<br>
+This is a simple comparison of my own experiments and methods on how to reduce filesizes while maintaining quality.<br>
 To install the tools mentioned here:
 <ul>
 <li><a target="_blank" href="https://0xacab.org/jvoisin/mat2">mat2</a> - via <span>sudo apt-get install mat2</span> or via git clone</li>
@@ -46,7 +44,7 @@ To install the tools mentioned here:
 <h3 id="images-jpg">Compressing .jpg images</h3>
 <p>
 I tried to compress the following image of Megumi Koneko with jpegoptim:<br>
-<img src="files/megumi_koneko_katherine_regular_21.jpg">
+<img src="files/ci_megumi_koneko_katherine_regular_21.jpg">
 <br>
 My findings: The metadata of image files can be HUGE. I tried to compress the image with jpegoptim but the filesize wouldn't change much. Then I tried to remove the Metadata of it and it reduced the filesize by an immensely 80%!<br>
 <br>
@@ -94,8 +92,8 @@ With this the filesize went from 728KB to 189KB (!).<br>
 A comparison of both of these files (the first / left file is the unoptimized one, the later the optimized one):<br>
 
 <div style="overflow:auto;">
-<img style="float:left;width:380px;max-width:95%;margin-right:5px;" src="files/arknights.png">
-<img style="float:left;width:380px;max-width:95%;" src="files/arknights-fs8.png">
+<img style="float:left;width:380px;max-width:95%;margin-right:5px;" src="files/ci_arknights.png">
+<img style="float:left;width:380px;max-width:95%;" src="files/ci_arknights-fs8.png">
 </div>
 <br>
 Barely any noticeable difference between the two, while the filesize is more than halfed.<br>
@@ -127,127 +125,47 @@ As you can see in the output above, I went from 13MB to 4.9MB without much quali
 If you decide to accept the possibility of quality loss then this is a great way of saving a lot of storage space.
 </p>
 
-<h3 id="videos">Compressing videos</h3>
+<h3 id="jpeg-levels">About jpeg quality settings</h3>
 <p>
-Videos are optimized a bit differently than images. You mainly use the tool <span>ffmpeg</span> to run as many commands as you need.<br>
+The jpeg format has a quality setting that can be between 0 and 100. It controls how good the quality and how high the filesize is, the lower the quality the lower the filesize.<br>
+To objectively compare the quality of the different quality settings we can use the vmaf (Video Multi-Method Assessment Fusion) library within ffmpeg. It objectively tells us how similar 2 images or videos are.<br>
 <br>
-To simply compress a video you can use <span>ffmpeg -i "input.mp4" -crf 25 output.mp4</span>. crf means "constant rate factor" and the higher you set it the more compressed the videos get. 25 is a good number for compression vs quality, and the video quality is always acceptible with it.<br>
+An example with a meme image, first is input (jpeg quality 100), then 40 and last 1 quality:<br>
+<div style="overflow:auto;">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf_input.jpg">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf_40.jpg">
+  <img style="float:left;max-width:250px;" src="files/ci_vmaf_1.jpg">
+</div>
 <br>
-An example to compress an old video further: You can change the codecs to more modern ones. Simply add <span>-vcodec h264 -acodec aac</span> inside the ffmpeg command to change the codecs to h264/aac respectively. (This would make the command look like <span>ffmpeg -i "input.mp4" -crf 25 -vcodec h264 -acodec aac output.mp4</span>)<br>
+Specifically with meme images the quality doesnt really matter and only adds to a joke most of the time.<br>
+The input size, downloaded somewhere from the internet, is 72.1KB. The 40 quality is 30.3KB in size and the 1 quality is only 7.2KB.<br>
 <br>
-If the framerate of the video is 60 you could lower it to 30 to save even more space. Simply add <span>-r 30</span> inside the ffmpeg command to limit the framerate to 30.<br>
+The filesize and quality for the different jpeg qualities:
+<div style="overflow:auto;">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf_score.png">
+  <img style="float:left;max-width:250px;" src="files/ci_vmaf_filesize.png">
+</div>
 <br>
-Last but not least: Some videos have an extremely high resolution (e.g. 4K) and you can save a LOT of space if you limit the resolution to a lower one. Simply add <span>-vf "scale=1280:-1"</span> to set the resolution of the output video to HD.<br>
+The default for Golang's image package is 75 quality. This comparison graph shows that from around 80 the filesize explodes without much quality being added to it.<br>
+If the goal is reduced filesize and the input is something that doesn't need a lot of quality, like a meme, then reducing the quality to 40 could save a lot of space.
+<br><br>
+Another example, with a 4k image of a photograph (100/40/1 quality setting):
+<div style="overflow:auto;">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf2_input.jpg">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf2_40.jpg">
+  <img style="float:left;max-width:250px;" src="files/ci_vmaf2_1.jpg">
+</div>
+A photograph, if not looked at too closely, is also fine with a very low quality setting.<br>
+The input size is 1.4MB, the 40 quality is 330.6KB and the 1 quality is 198KB.<br>
+The quality 1 image has a very high filesize compared to the 40 quality one. The meme image above compressed way better. This is due to the resolution of the image.<br>
 <br>
-With all the optimizations combined the command would look like:<br>
-<pre>
-ffmpeg -i "input.mp4" -crf 25 -vcodec h264 -acodec aac -r 30 -vf "scale=1280:-1" output.mp4
-</pre>
-This once lowered the filesize of a 4K 30min video from 3.2GB down to 800MB (!).<br>
+The filesize and quality graphs for the photograph:
+<div style="overflow:auto;">
+  <img style="float:left;max-width:250px;margin-right:3px;" src="files/ci_vmaf2_score.png">
+  <img style="float:left;max-width:250px;" src="files/ci_vmaf2_filesize.png">
+</div>
 <br>
-Another example would be NVidia's Shadowplay function: I sometimes clip gameplay videos that are 1 minute long, are in FullHD resolution and in 60fps. These clips are 330MB for one minute of video. If I simply run <span>ffmpeg -i "Gameplay 03.02.2022.mp4" -crf 25 output.mp4</span> it reduces the filesize down to 100MB or even as low as 30MB if the game doesn't have much action going on.<br>
-An example:
-<pre>
-user@debian:~/Videos$ ls -ahl
--rwxrwxrwx 1 user user <b>341M</b> Jan 22 16:41 'divinity2_20220122_16.mp4'
-user@debian:~/Videos$ ffmpeg -i "divinity2_20220122_16.mp4" <b>-crf 25</b> _divinity2_20220122_16.mp4
-user@debian:~/Videos$ ls -ahl _divinity2_20220122_16.mp4
--rwxrwxrwx 1 user user <b>54M</b> Feb  3 10:31 _divinity2_20220122_16.mp4
-</pre>
-<br>
-Using ffmpeg to either optimize or compress the video to sizes you think are reasonably enough is a great way to save a lot of storage space.<br>
-<br>
-Bitrates from compressing 2 different videos, cut out from a livestream with copied codecs):<br>
-
-Elden Ring gameplay (running around, camera movement, action, no static screens)
-<table>
-<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
-<tr><td>5400</td><td>38.7M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
-<tr><td>6700</td><td>49.1M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
-<tr><td>6100</td><td>44.9M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
-<tr><td>3500</td><td>26.8M</td><td>60FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1"</td></tr>
-<tr><td>3200</td><td>23.9M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
-</table>
-
-Vlog video (static camera, not much movement, focus on talking, shoulders-up angle)
-<table>
-<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
-<tr><td>5100</td><td>38.4M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
-<tr><td>1100</td><td>8.99M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
-<tr><td>1000</td><td>8.51M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
-<tr><td>464</td><td>4.41M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
-</table>
-
-Both of these videos above are taken from a single livestream. The bitrate of these streams is rather static because livestreaming services prefer encoding speed over size-efficiency. This enables them to show streams live and with not much delay, but this also causes the bitrate to be quite higher with static videos.  
-Re-encoding (compressing) videos with not much movement/action can save a lot of storage space, but gaming videos are not easily reduced in size without sacrificing the quality of the video. 
-</p>
-
-<h3 id="videocodecs">Different video codecs</h3>
-<p>
-I am not an expert with video codecs.<br>
-I simply tested a 1 minute long clip with different encodings and input parameters. The table below shows my findings in "time taken for encoding" and "resulting filesize".<br>
-<br>
-The input file is a 1 minute long clip from the "YuruCamp" movie (to be precise its from the 2nd to the 3rd minute of the movie).<br>
-The input video is h264 1920x1080 23.98fps and the audio is aac 128kb/s 48000Hz stereo.<br>
-The video has a few scenes with barely any movement and near the end firework explosions, which should make it a good clip to compare multiple codecs.<br>
-<br>
-Compared codecs:
-<ul>
-<li>AV1</li>
-<li>AVC/H264</li>
-<li>HEVC/H265</li>
-<li>VP8</li>
-<li>VP9</li>
-</ul>
-All these commands have been run with:<span>ffmpeg -benchmark -ss 120 -i "yurucamp_movie.mp4" -t 60 $params output.mp4</span> , where $params will be replaced with the flags from the below table.<br>
-If no explicit video codec is mentioned then it is the default h264 codec. Every video has been converted to and from FullHD.
-<table>
-<tr><th>Flags</th><th>Size(MB)</th><th>Time</th><th>notes</th></tr>
-<tr><td>/none/</td><td>22MB</td><td>24.510s</td><td>h264</td></tr>
-<tr><td>-movflags +faststart</td><td>22MB</td><td>24.217s</td><td>1:1 same as above</td></tr>
-<tr><td>-fps_mode vfr</td><td>22MB</td><td>25.006s</td><td>no difference to above</td></tr>
-<tr><td>-tune stillimage</td><td>27MB</td><td>26.464s</td><td>only good for slideshows</td></tr>
-<tr><td>-tune animation</td><td>18.7MB</td><td>27.419s</td><td>good for anime</td></tr>
-<tr><td>-tune animation -preset slow</td><td>17.5MB</td><td>41.268s</td><td>not worth the time</td></tr>
-<tr><td>-vcodec libx265</td><td>7.8MB</td><td>44.043s</td><td>bad compatibility</td></tr>
-<tr><td>-vcodec libx264 -crf 51</td><td>2MB</td><td>13.513s</td><td>very bad pixelation</td></tr>
-<tr><td>-vcodec libvpx</td><td>5.1MB</td><td>44.044s</td><td>=vp8, .webm, fluctuating quality</td></tr>
-<tr><td>-vcodec libvpx-vp9</td><td>13MB</td><td>172.476s</td><td>vp9, .mp4</td></tr>
-<tr><td>-vcodec librav1e</td><td>9.9MB</td><td>1161.541s</td><td>very slow</td></tr>
-<tr><td>-vcodec librav1e -speed 10</td><td>13MB</td><td>432.934</td><td>still slow</td></tr>
-<tr><td>-vcodec libaom-av1</td><td>???</td><td>~17min</td><td>not worth it</td></tr>
-<tr><td>-vcodec libsvtav1</td><td>9.9MB</td><td>19.499s</td><td>very good compared to h265</td></tr>
-<tr><td>-vcodec libsvtav1 -crf 40</td><td>7.4MB</td><td>18.623s</td><td>default=35</td></tr>
-<tr><td>-vcodec libsvtav1 -crf 63</td><td>1.9MB</td><td>14.580s</td><td>still watchable</td></tr>
-</table>
-<br>
-Takeaways and learnings from these convertions:
-<ul>
-<li>AV1 looks very promising as it takes less time than HEVC but has a bit larger filesize (but still smaller than h264)</li>
-<li>H265 is not supported by firefox or the windows explorer (for preview image in file explorer)</li>
-<li>H264 with full constant-rate-factor looks unwatchable, while av1 looks very watchable while having a lower filesize too</li>
-<li>Lowering the resolution with av1 on full compression doesn't help much to lower the filesize (1.9MB -> 1.2MB if you lower from FullHD -> HD)</li>
-<li>The other av1 codecs (except libsvtav1) are really slow</li>
-<li>"Preset slow" doesn't help much if you compare the extra time taken to the lower filesize. It's better to just take a slower codec without a slow preset (e.g. h264 preset slow -> h265 default)</li>
-<li>The "tune"'s for the h264 codec help a lot for barely any extra time taken</li>
-</ul>
-</p>
-
-<h3 id="gpuencoding">About GPU encoding</h3>
-<p>
-Modern GPUs support the option to encode and decode video streams directly on the GPU.<br>
-This is way faster than using the CPU, but also very limited with bad compression.<br>
-<br>
-This was tested with a RTX 4060 and the "Handbrake" software on windows 10.<br>
-It wasn't tested with ffmpeg as the compilation and flags for GPU encoding never worked.<br>
-In Handbrake it is called "nvenc".<br>
-<br>
-If you encode a video from h264 to libx265 with Handbrake it works really well. The GPU does all the work and the CPU sits idle. It converts a 20min video in a few seconds.<br>
-The main problem comes from this speed: It only converts the video codec, nothing more. It doesn't optimize the video or touch the quality at all.<br>
-Normally you want to convert from 264 to 265 for the better compression ratio (most of the time a 40% decrease in size for me, which saves a lot of storage space).<br>
-This compression is, atleast for me, absent when encoding with GPU. There is no reason to use this because the only reason I would want to convert these videos is for the better storage ratio.<br>
-<br>
-Maybe other tools do it better, or AMD GPUs are better at this. But atleast for me and the RTX4060 it is not worthwhile to encode with a GPU instead of a CPU.
+The visual quality of the image reaches over 90% at quality setting 40. The filesize spikes upwards after quality setting 80.
 </p>
 
 <h3 id="iso">ISO images and 7zip</h3>
@@ -338,9 +256,9 @@ To make an image black and white only you can use the following command:<br>
 
 A comparison of the (in order) original jpg image, the converted and optimized png image with only 10 colors and the monochrome png image:<br>
 <div style="overflow:auto;">
-<img style="float:left;max-width:250px;margin-right:5px;" src="files/conv_orig_356111.jpg">
-<img style="float:left;max-width:250px;;margin-right:5px;" src="files/conv_10colors.png">
-<img style="float:left;max-width:250px;" src="files/conv_mono.png">
+<img style="float:left;max-width:250px;margin-right:5px;" src="files/ci_conv_orig_356111.jpg">
+<img style="float:left;max-width:250px;;margin-right:5px;" src="files/ci_conv_10colors.png">
+<img style="float:left;max-width:250px;" src="files/ci_conv_mono.png">
 </div>
 
 <br>
@@ -370,6 +288,6 @@ I tend to compare this with the webp image format: Ofcourse it has a way better 
 So even though {webp,the website} is the best at compression, I stick to my little linux commands which do a well enough job for me and are supported {offline,everywhere}.
 </p>
 
-<br><br><br>
+<br><br><br>2026.09.26
 </body>
 </html>

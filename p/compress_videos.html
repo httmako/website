@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>compressing videos</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="content-type" content="text/html; charset=utf-8">
+<link rel="stylesheet" href="/style.css">
+<style>
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 5px;
+}
+</style>
+</head>
+<body>
+<h1>Compressing videos</h1>
+
+<ul>
+<li><a href="#preamble">Preamble</a></li>
+<li><a href="#codecs">Codecs</a></li>
+<li><a href="#encoders">Encoders</a></li>
+<li><a href="#videos">Compressing videos</a></li>
+<li><a href="#vmaf">Benchmarking codecs and their compression with vmaf</a></li>
+<li><a href="#results">Benchmark result interpretation</a></li>
+<li><a href="#gpuencoding">About GPU encoding</a></li>
+</ul>
+
+<h3 id="preamble">Preamble</h3>
+<p>
+This article explains how to reduce the filesize of videos and some popular video codecs.<br>
+This is a simple comparison of my own experiments and methods on how to reduce filesizes.<br>
+To install the tools mentioned here:
+<ul>
+<li><a target="_blank" href="https://ffmpeg.org/">ffmpeg</a> - via <span>sudo apt-get install ffmpeg</span></li>
+</ul>
+</p>
+
+<h3 id="videos">Compressing videos</h3>
+<p>
+To simply compress a video you can use, for example, <span>ffmpeg -i "input.mp4" -crf 35 output.mp4</span>. crf means "constant rate factor" and the higher you set it the more compressed the videos get. The higher the "crf" the lower the quality and the lower the filesize. Every video codec has its own interpretation of the crf value and there is no fixed number that works for every codec.<br>
+<br>
+Another example to compress further: You can change the codecs to more modern ones. Simply add <span>-vcodec h265 -acodec aac</span> inside the ffmpeg command to change the codecs of video/audio to h264/aac respectively. (This would make the command look like <span>ffmpeg -i "input.mp4" -crf 25 -vcodec h265 -acodec aac output.mp4</span>)<br>
+<br>
+If the framerate of the video is 60 you could lower it to 30 to save space. Simply add <span>-r 30</span> inside the ffmpeg command to limit the framerate to 30.<br>
+<br>
+Some videos have an extremely high resolution (e.g. 4K) and you can save a LOT of space if you limit the resolution to a lower one. Simply add <span>-vf "scale=1280:-1"</span> to set the resolution of the output video to HD.<br>
+(The "-1" in the height means "auto set height to match aspect ratio of input video with 1280 width".)<br>
+<br>
+With all the settings combined the command would look like:<br>
+<pre>
+ffmpeg -i "input.mp4" -crf 25 -vcodec h265 -acodec aac -r 30 -vf "scale=1280:-1" output.mp4
+</pre>
+This once lowered the filesize of a 4K 30min video from 3.2GB down to 800MB.<br>
+<br>
+Sometimes the re-encoding of content is enough to lower the filesize.<br>
+For example, twitch.tv or Nvidia's Shadowplay use "live video streaming", which mostly uses a fixed bitrate. They do not compress videos because it would need a lot of CPU power. The less compression / "efficient filesize usage" the video has, the faster it is to encode. An example for this is the "fast" preset for video codecs, it raises filesize but lowers encoding time.<br>
+An example with a Nvidia Shadowplay video, simply re-encoding it:
+<pre>
+user@debian:~/Videos$ ls -ahl
+-rwxrwxrwx 1 user user <b>341M</b> Jan 22 16:41 'divinity2_20220122_16.mp4'
+user@debian:~/Videos$ ffmpeg -i "divinity2_20220122_16.mp4" <b>-crf 25</b> _divinity2_20220122_16.mp4
+user@debian:~/Videos$ ls -ahl _divinity2_20220122_16.mp4
+-rwxrwxrwx 1 user user <b>54M</b> Feb  3 10:31 _divinity2_20220122_16.mp4
+</pre>
+<br>
+
+An example with twitch.tv clips:<br>
+<br>
+Elden Ring gameplay (running around, camera movement, action, no static screens)
+<table>
+<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
+<tr><td>5400</td><td>38.7M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
+<tr><td>6700</td><td>49.1M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
+<tr><td>6100</td><td>44.9M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
+<tr><td>3500</td><td>26.8M</td><td>60FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1"</td></tr>
+<tr><td>3200</td><td>23.9M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
+</table>
+<br>
+Vlog video (static camera, not much movement, focus on talking)
+<table>
+<tr><th>Bitrate(kbit/s)</th><th>Size</th><th>Type</th><th>Command</th></tr>
+<tr><td>5100</td><td>38.4M</td><td>60FPS/FHD</td><td>/source file/</td></tr>
+<tr><td>1100</td><td>8.99M</td><td>60FPS/FHD</td><td>-acodec aac -vcodec h264</td></tr>
+<tr><td>1000</td><td>8.51M</td><td>30FPS/FHD</td><td>-acodec aac -vcodec h264 -r 30</td></tr>
+<tr><td>464</td><td>4.41M</td><td>30FPS/HD</td><td>-acodec aac -vcodec h264 -vf "scale=1280:-1" -r 30</td></tr>
+</table>
+<br>
+Both of these videos above are taken from a single livestream.<br>
+The bitrate of action gameplay and mostly static content is very similar, as can be seen above, because live-streaming services do not compress for speed purposes.<br>
+Simply re-encoding live-stream videos are a good way to save a lot of storage space.
+</p>
+
+<h3 id="codecs">Codecs</h3>
+<p>
+There exist many different video codecs. The popular ones are:
+<ul>
+<li>H264 (AVC)</li>
+<li>H265 (HEVC)</li>
+<li>H266 (VVC)</li>
+<li>VP8</li>
+<li>VP9</li>
+<li>AV1</li>
+</ul>
+<br>
+The most widely supported one is H264, it runs on any device with a video player.<br>
+H265 is more optimized but lacks compatibility. Firefox on desktop can not play H265 encoded videos, but mobile firefox can.<br>
+H266 is very new and not widely adopted.<br>
+VP8 and VP9 are mostly used for older .webm files and are superseded by AV1.<br>
+AV1 can be in .mp4, .webm and .mkv files and is used by e.g. youtube.<br>
+<br>
+H26* codecs are patented and licensed. AV1 is open and royalty-free, made by AOMedia (Google, Netflix, Cisco, ...).<br>
+AV1 is very optimized (similar to H265) but also has a very wide adoption rate and compatibility. Firefox on desktop and mobile can play AV1 videos.<br>
+H265 seems to have a low adoption and compatibility rate because of the patent and licensing problems it has. Example: <a target="_blank" href="https://en.wikipedia.org/wiki/H.265#Controversy">https://en.wikipedia.org/wiki/H.265#Controversy</a><br>
+<br>
+In Windows 10 the H265, H266 and AV1 video files have no preview image on the icon display, but H264 videos generate it correctly.<br>
+</p>
+
+<h3 id="encoders">Encoders</h3>
+<p>
+AV1 is a codec but to actually encode something to the format you need an encoder.<br>
+<br>
+To list all AV1 encoders in ffmpeg:
+<br>
+<pre>
+$ ffmpeg -hide_banner -encoders | grep -i av1
+V....D libaom-av1           libaom AV1 (codec av1)
+V....D librav1e             librav1e AV1 (codec av1)
+V..... libsvtav1            SVT-AV1(Scalable Video Technology for AV1) encoder (codec av1)
+V....D av1_d3d12va          D3D12VA av1 encoder (codec av1)
+V....D av1_nvenc            NVIDIA NVENC av1 encoder (codec av1)
+V..... av1_qsv              AV1 (Intel Quick Sync Video acceleration) (codec av1)
+V....D av1_amf              AMD AMF AV1 encoder (codec av1)
+V....D av1_mf               AV1 via MediaFoundation (codec av1)
+V....D av1_vaapi            AV1 (VAAPI) (codec av1)
+V....D av1_vulkan           AV1 (Vulkan) (codec av1)
+A....D wmav1                Windows Media Audio 1
+</pre>
+<br>
+"libaom-av1" is the reference encoder for AV1, it is very very slow but has "near-perfect" execution and a higher compression rate than other encoders.<br>
+The current recommendation for AV1 is "libsvtav1", it is fast and compresses well.<br>
+<br>
+For 264,265,vp8,vp9 and 266 there are only one main encoder, which will be tested below.<br>
+They are: libx264, libx265, libvpx, libvpx-vp9 and vvcenc.
+</p>
+
+
+
+<h3 id="vmaf">Benchmarking codecs and their compression with vmaf</h3>
+<p>
+VMAF (Video Multi-Method Assessment Fusion) is a library to objectively compare video quality between 2 videos.<br>
+It can be used to compare different video codecs with each other in regards to "filesize-to-quality" ratio.<br>
+ffmpeg supports vmaf out-of-the-box and will be used for the comparisons below.<br>
+An example usage of libvmaf:<br>
+<pre>
+ffmpeg -i distorted.mpg -i reference.mpg -lavfi libvmaf=log_path=output.xml -f null -
+</pre>
+<br>
+The comparisons with libvmaf take longer than the encoding most of the time. With a 1920x1080 60fps video it ran at 0.26x speed.<br>
+<br>
+
+The goal of this benchmark is to compare different video encoders and the time they took to convert, the resulting filesize and the vmaf score to the source video.<br>
+ffmpeg version 9.0 was used for these conversions.<br>
+3 Videos were used:<br>
+<br>
+A 12 second tiktok dance video with a static background, downloaded with yt-dlp.<br>
+Source is H265 30fps 1080x1920p.<br>
+<br>
+A 1 minute music video with many cuts, moving and background effects, but also some rather static shots.<br>
+Source is H264 60fps 1920x1080p.<br>
+<br>
+A 22 minute anime episode, "Tomo-chan is a girl! Episode 3".<br>
+Source is H264 23fps 1280x720p.<br>
+<br>
+The results:
+
+<h4>12s tiktok dance</h4>
+<p>
+<table>
+<tr><td>flags</td><td>encode time</td><td>quality</td><td>filesize</td><td>size diff</td></tr>
+<tr><td>/input/</td><td>0s</td><td>100</td><td>1857361</td><td>100</td></tr>
+<tr><td>-vcodec libx264</td><td>13.862826518s</td><td>78.518588</td><td>4747648</td><td>255</td></tr>
+<tr><td>-vcodec libsvtav1</td><td>12.417688337s</td><td>78.363506</td><td>3050787</td><td>164</td></tr>
+<tr><td>-vcodec libx265</td><td>23.296691749s</td><td>77.475143</td><td>2048236</td><td>110</td></tr>
+<tr><td>-vcodec libx264 -r 30</td><td>13.153794256s</td><td>43.473222</td><td>4724905</td><td>254</td></tr>
+<tr><td>-vcodec libsvtav1 -r 30</td><td>12.251826181s</td><td>43.584006</td><td>3037270</td><td>163</td></tr>
+<tr><td>-vcodec libx265 -r 30</td><td>21.872826926s</td><td>43.707735</td><td>2054583</td><td>110</td></tr>
+<tr><td>-vcodec libx264 -crf 63</td><td>6.53311335s</td><td>48.744032</td><td>248565</td><td>13</td></tr>
+<tr><td>-vcodec libx265 -crf 51</td><td>15.964289776s</td><td>52.211390</td><td>215415</td><td>11</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 63</td><td>11.452395578s</td><td>63.788422</td><td>299710</td><td>16</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5</td><td>35.679031488s</td><td>78.556270</td><td>2703378</td><td>145</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5 -crf 36</td><td>36.787216761s</td><td>78.407436</td><td>2541498</td><td>136</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5 -crf 42</td><td>37.60140495s</td><td>77.241037</td><td>1823098</td><td>98</td></tr>
+<tr><td>-vcodec libsvtav1 -vf atadenoise</td><td>12.967361453s</td><td>78.353880</td><td>3013724</td><td>162</td></tr>
+<tr><td>-vcodec libsvtav1 -vf hqdn3d</td><td>13.033108112s</td><td>78.142130</td><td>2921178</td><td>157</td></tr>
+<tr><td>-vcodec libx265 -vf atadenoise</td><td>22.369891418s</td><td>77.380541</td><td>2027430</td><td>109</td></tr>
+<tr><td>-vcodec libx265 -vf hqdn3d</td><td>22.797749604s</td><td>77.067950</td><td>1980212</td><td>106</td></tr>
+<tr><td>-vcodec libx264 -vf atadenoise</td><td>13.60036988s</td><td>78.385264</td><td>4744122</td><td>255</td></tr>
+<tr><td>-vcodec libx264 -vf hqdn3d</td><td>14.249355655s</td><td>78.083106</td><td>4613542</td><td>248</td></tr>
+</table>
+Observations:
+<ul>
+<li>The input was already x265 with high compression from tiktok, so the re-encoding without flags makes the input file much bigger</li>
+</ul>
+</p>
+
+<h4>1min music video</h4>
+<p>
+<table>
+<tr><td>flags</td><td>encode time</td><td>quality</td><td>filesize</td><td>size diff</td></tr>
+<tr><td>/input/</td><td>0s</td><td>100</td><td>83341348</td><td>100</td></tr>
+<tr><td>-vcodec libx264</td><td>2m18.452027487s</td><td>71.341284</td><td>38335885</td><td>45</td></tr>
+<tr><td>-vcodec libsvtav1</td><td>1m46.818796498s</td><td>72.159243</td><td>21008677</td><td>25</td></tr>
+<tr><td>-vcodec libx265</td><td>3m57.057959191s</td><td>69.695734</td><td>12802516</td><td>15</td></tr>
+<tr><td>-vcodec libx264 -r 30</td><td>1m33.472165025s</td><td>21.358468</td><td>32223708</td><td>38</td></tr>
+<tr><td>-vcodec libsvtav1 -r 30</td><td>59.474596951s</td><td>21.643223</td><td>14512709</td><td>17</td></tr>
+<tr><td>-vcodec libx265 -r 30</td><td>2m45.375872608s</td><td>21.406521</td><td>11419915</td><td>13</td></tr>
+<tr><td>-vcodec libx264 -crf 63</td><td>1m38.852187208s</td><td>30.893665</td><td>3282285</td><td>3</td></tr>
+<tr><td>-vcodec libx265 -crf 51</td><td>2m59.600133385s</td><td>31.012789</td><td>1794172</td><td>2</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 63</td><td>1m43.538152334s</td><td>59.393447</td><td>2537095</td><td>3</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 4</td><td>6m23.049201576s</td><td>72.359325</td><td>18292625</td><td>21</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5</td><td>4m58.157046422s</td><td>72.328905</td><td>18542865</td><td>22</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 6</td><td>3m39.611192232s</td><td>72.301776</td><td>19113434</td><td>22</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 7</td><td>2m23.515272883s</td><td>72.118201</td><td>19805159</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 8</td><td>1m48.395351859s</td><td>72.159243</td><td>21008677</td><td>25</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 9</td><td>1m1.818236216s</td><td>72.074842</td><td>19603755</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 10</td><td>45.382436567s</td><td>70.212467</td><td>19221825</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 11</td><td>41.889777764s</td><td>69.551712</td><td>19315259</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 12</td><td>45.195070846s</td><td>69.551712</td><td>19315259</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 13</td><td>41.919028717s</td><td>69.551712</td><td>19315259</td><td>23</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5 -crf 36</td><td>4m46.768056974s</td><td>72.223550</td><td>17403336</td><td>20</td></tr>
+<tr><td>-vcodec libsvtav1 -preset 5 -crf 42</td><td>4m56.988644991s</td><td>71.566286</td><td>12491676</td><td>14</td></tr>
+<tr><td>-vcodec libsvtav1 -vf atadenoise</td><td>1m53.404954076s</td><td>72.156731</td><td>20891422</td><td>25</td></tr>
+<tr><td>-vcodec libsvtav1 -vf hqdn3d</td><td>1m56.136302554s</td><td>70.699122</td><td>20422932</td><td>24</td></tr>
+<tr><td>-vcodec libx265 -vf atadenoise</td><td>4m4.45587605s</td><td>69.435055</td><td>12288608</td><td>14</td></tr>
+<tr><td>-vcodec libx265 -vf hqdn3d</td><td>4m6.005874417s</td><td>68.100506</td><td>12205620</td><td>14</td></tr>
+<tr><td>-vcodec libx264 -vf atadenoise</td><td>2m34.889483814s</td><td>71.189477</td><td>37158446</td><td>44</td></tr>
+<tr><td>-vcodec libx264 -vf hqdn3d</td><td>2m40.552963929s</td><td>69.669793</td><td>35678596</td><td>42</td></tr>
+</table>
+Observations:
+<ul>
+<li>x265 has the lowest filesize but visibly the lowest score, artifacts are worse than the slighty higher quality av1</li>
+<li>av1 has a pretty high score (59%) with the highest crf and only 3% of the filesize of the input</li>
+</ul>
+
+</p>
+
+<h4>22min anime episode</h4>
+<p>
+<table>
+<tr><td>flags</td><td>encode time</td><td>quality</td><td>filesize</td><td>size diff</td></tr>
+<tr><td>/input/</td><td>0s</td><td>100</td><td>236968602</td><td>100</td></tr>
+<tr><td>-an -vcodec libx264</td><td>6m15.345760508s</td><td>87.344353</td><td>148361131</td><td>76</td></tr>
+<tr><td>-an -vcodec libsvtav1</td><td>7m11.761984244s</td><td>87.357077</td><td>97750864</td><td>50</td></tr>
+<tr><td>-an -vcodec libx265</td><td>9m55.586736357s</td><td>85.889857</td><td>55217120</td><td>28</td></tr>
+<tr><td>-an -vcodec libx264 -tune animation</td><td>6m44.460372372s</td><td>87.548421</td><td>126011469</td><td>64</td></tr>
+<tr><td>-an -vcodec libx264 -crf 63</td><td>3m16.445515058s</td><td>47.179454</td><td>8121671</td><td>4</td></tr>
+<tr><td>-an -vcodec libx264 -crf 63 -tune animation</td><td>3m38.845457439s</td><td>48.235334</td><td>7601532</td><td>3</td></tr>
+<tr><td>-an -vcodec libx265 -crf 51</td><td>8m8.995447947s</td><td>49.520054</td><td>5808345</td><td>2</td></tr>
+<tr><td>-an -vcodec libsvtav1 -crf 63</td><td>7m4.740727534s</td><td>75.700035</td><td>11125311</td><td>5</td></tr>
+<tr><td>-an -vcodec libsvtav1 -preset 5</td><td>18m18.19655016s</td><td>87.517643</td><td>90526942</td><td>46</td></tr>
+<tr><td>-an -vcodec libsvtav1 -preset 5 -crf 36</td><td>17m50.142429102s</td><td>87.420989</td><td>84466200</td><td>43</td></tr>
+<tr><td>-an -vcodec libsvtav1 -preset 5 -crf 42</td><td>18m46.927339274s</td><td>86.791675</td><td>58767027</td><td>30</td></tr>
+<tr><td>-an -vcodec libsvtav1 -vf atadenoise</td><td>8m6.070107256s</td><td>87.309794</td><td>97049203</td><td>49</td></tr>
+<tr><td>-an -vcodec libsvtav1 -vf hqdn3d</td><td>7m40.545940213s</td><td>86.305366</td><td>88252006</td><td>45</td></tr>
+<tr><td>-an -vcodec libx265 -vf atadenoise</td><td>11m4.700751616s</td><td>85.732573</td><td>53663748</td><td>27</td></tr>
+<tr><td>-an -vcodec libx265 -vf hqdn3d</td><td>10m57.35642272s</td><td>84.699570</td><td>50932164</td><td>26</td></tr>
+<tr><td>-an -vcodec libx264 -vf atadenoise</td><td>6m43.135803649s</td><td>87.204040</td><td>139474882</td><td>71</td></tr>
+<tr><td>-an -vcodec libx264 -vf hqdn3d</td><td>6m31.558524192s</td><td>86.074931</td><td>120349381</td><td>61</td></tr>
+<tr><td>-an -vcodec libsvtav1 -preset 4</td><td>22m5.078420825s</td><td>87.544898</td><td>87859793</td><td>45</td></tr>
+<tr><td>-an -vcodec libsvtav1 -preset 6</td><td>12m29.970540259s</td><td>87.358997</td><td>87809573</td><td>45</td></tr>
+<tr><td>-an -vcodec libsvtav1 -svtav1-params keyint=10s:aq-mode=2:tune=0:enable-overlays=1:scd=1:scm=1</td><td>7m39.638659687s</td><td>87.380198</td><td>95323139</td><td>48</td></tr>
+</table>
+Observations:
+<ul>
+<li>For anime, libx265 has a clear advantage with only 28% filesize compared to the input but only 2% quality loss compared to other codecs.</li>
+<li>The h264 animation tune is good for lowering filesize but still looses compared to av1</li>
+<li>The av1 flags for anime (the last entry) do not help much in reducing the filesize</li>
+</ul>
+</p>
+</p>
+
+<h3 id="results">Benchmark result interpretation</h3>
+<p>
+AV1 was consistently fast in encoding, low in filesize and high in quality compared to the original.<br>
+x265 has a very high compression, reaching the smallest filesizes in every comparison but also having a lower quality compared to the other codecs.<br>
+Denoising with atadenoise or hqdn3d helps with lowering filesize but also reduces quality.<br>
+<br>
+I, personally, would recommend:
+<ul>
+<li>If you need high availability and compatibility: x264</li>
+<li>If you want a good allrounder: AV1</li>
+<li>If you need very high compression or convert animation: x265</li>
+</ul>
+<br>
+My default encoder is "libsvtav1" nowadays. 265 has lower compatibility because of its patent-problems and 264 is inefficient with its filesizes.
+</p>
+
+<h3 id="gpuencoding">About GPU encoding</h3>
+<p>
+Modern GPUs support the option to encode and decode video streams directly on the GPU.<br>
+This is way faster than using the CPU, but also very limited in regards to compression.<br>
+<br>
+Ffmpeg supports "libx265" for HEVC encoding via CPU and, for nvidia, the "hevc_nvenc" codec for GPU encoding.<br>
+Comparing these 2 is difficult, because hevc_nvenc does not support the crf flag.<br>
+The input file is 1.8MB in size, with libx265 it goes down to 1.1MB (-0.7MB) but with hevc_nvenc it goes up to 2.8MB (+1MB).<br>
+It is expected to have a lower filesize with the HEVC codec becaues it is more optimized for lower filesizes. GPU encoding prioritizes speed over filesize.
+</p>
+
+<h3 id="videocodecs">(OLD) video codec comparison</h3>
+<p>
+<b>(This has been written and tested years ago, with ffmpeg v7. It is kept for historical purposes)<br></b>
+<br>
+I am not an expert with video codecs.<br>
+I simply tested a 1 minute long clip with different encodings and input parameters. The table below shows my findings in "time taken for encoding" and "resulting filesize".<br>
+<br>
+The input file is a 1 minute long clip from the "YuruCamp" movie (to be precise its from the 2nd to the 3rd minute of the movie).<br>
+The input video is h264 1920x1080 23.98fps and the audio is aac 128kb/s 48000Hz stereo.<br>
+The video has a few scenes with barely any movement and near the end firework explosions, which should make it a good clip to compare multiple codecs.<br>
+<br>
+Compared codecs:
+<ul>
+<li>AV1</li>
+<li>AVC/H264</li>
+<li>HEVC/H265</li>
+<li>VP8</li>
+<li>VP9</li>
+</ul>
+All these commands have been run with:<span>ffmpeg -benchmark -ss 120 -i "yurucamp_movie.mp4" -t 60 $params output.mp4</span> , where $params will be replaced with the flags from the below table.<br>
+If no explicit video codec is mentioned then it is the default h264 codec. Every video has been converted to and from FullHD.
+<table>
+<tr><th>Flags</th><th>Size(MB)</th><th>Time</th><th>notes</th></tr>
+<tr><td>/none/</td><td>22MB</td><td>24.510s</td><td>h264</td></tr>
+<tr><td>-movflags +faststart</td><td>22MB</td><td>24.217s</td><td>1:1 same as above</td></tr>
+<tr><td>-fps_mode vfr</td><td>22MB</td><td>25.006s</td><td>no difference to above</td></tr>
+<tr><td>-tune stillimage</td><td>27MB</td><td>26.464s</td><td>only good for slideshows</td></tr>
+<tr><td>-tune animation</td><td>18.7MB</td><td>27.419s</td><td>good for anime</td></tr>
+<tr><td>-tune animation -preset slow</td><td>17.5MB</td><td>41.268s</td><td>not worth the time</td></tr>
+<tr><td>-vcodec libx265</td><td>7.8MB</td><td>44.043s</td><td>bad compatibility</td></tr>
+<tr><td>-vcodec libx264 -crf 51</td><td>2MB</td><td>13.513s</td><td>very bad pixelation</td></tr>
+<tr><td>-vcodec libvpx</td><td>5.1MB</td><td>44.044s</td><td>=vp8, .webm, fluctuating quality</td></tr>
+<tr><td>-vcodec libvpx-vp9</td><td>13MB</td><td>172.476s</td><td>vp9, .mp4</td></tr>
+<tr><td>-vcodec librav1e</td><td>9.9MB</td><td>1161.541s</td><td>very slow</td></tr>
+<tr><td>-vcodec librav1e -speed 10</td><td>13MB</td><td>432.934</td><td>still slow</td></tr>
+<tr><td>-vcodec libaom-av1</td><td>???</td><td>~17min</td><td>not worth it</td></tr>
+<tr><td>-vcodec libsvtav1</td><td>9.9MB</td><td>19.499s</td><td>very good compared to h265</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 40</td><td>7.4MB</td><td>18.623s</td><td>default=35</td></tr>
+<tr><td>-vcodec libsvtav1 -crf 63</td><td>1.9MB</td><td>14.580s</td><td>still watchable</td></tr>
+</table>
+<br>
+Takeaways and learnings from these convertions:
+<ul>
+<li>AV1 looks very promising as it takes less time than HEVC but has a bit larger filesize (but still smaller than h264)</li>
+<li>H265 is not supported by firefox or the windows explorer (for preview image in file explorer)</li>
+<li>H264 with full constant-rate-factor looks unwatchable, while av1 looks very watchable while having a lower filesize too</li>
+<li>Lowering the resolution with av1 on full compression doesn't help much to lower the filesize (1.9MB -> 1.2MB if you lower from FullHD -> HD)</li>
+<li>The other av1 codecs (except libsvtav1) are really slow</li>
+<li>"Preset slow" doesn't help much if you compare the extra time taken to the lower filesize. It's better to just take a slower codec without a slow preset (e.g. h264 preset slow -> h265 default)</li>
+<li>The "tune"'s for the h264 codec help a lot for barely any extra time taken</li>
+</ul>
+</p>
+
+<br><br><br>2026.09.26
+</body>
+</html>
