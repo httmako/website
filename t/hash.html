@@ -6,7 +6,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
 table {width:90%; max-width:90%;}
-td:nth-child(even) input {width:500px; max-width:90%;}
+td:nth-child(even) input {width:1000px;}
+input{resize:both;}
 </style>
 </head>
 <body>
@@ -20,6 +21,10 @@ td:nth-child(even) input {width:500px; max-width:90%;}
 <tr>
 <td><label for="sha256">SHA-256</label></td>
 <td><input id="sha256"></td>
+</tr>
+<tr>
+<td><label for="sha384">SHA-384</label></td>
+<td><input id="sha384"></td>
 </tr>
 <tr>
 <td><label for="sha512">SHA-512</label></td>
@@ -103,9 +108,10 @@ td:nth-child(even) input {width:500px; max-width:90%;}
 */
 async function createHashes(){
   let text = document.getElementById("input").value;
-  document.getElementById("sha1").value = await sha1(text);
-  document.getElementById("sha256").value = await sha256(text);
-  document.getElementById("sha512").value = await sha512(text);
+  document.getElementById("sha1").value = await sha(text,"SHA-1");
+  document.getElementById("sha256").value = await sha(text,"SHA-256");
+  document.getElementById("sha384").value = await sha(text,"SHA-384");
+  document.getElementById("sha512").value = await sha(text,"SHA-512");
   document.getElementById("md5").value = md5(text);
   document.getElementById("crc32").value = crc32(text);
   document.getElementById("whirlpool").value = Whirlpool(text);
@@ -117,33 +123,18 @@ async function createHashes(){
   document.getElementById("frombin").value = FromBinary(text);
 }
 
-/////////////////////
-// SHA 1, 256, 512 //
-/////////////////////
+//////////////////////////
+// SHA 1, 256, 384, 512 //
+//////////////////////////
 
-async function sha1(text) {
+async function sha(text,sha) {
   const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-1', msgUint8);
+  const hashBuffer = await crypto.subtle.digest(sha, msgUint8);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
   return hashHex;
 }
 
-async function sha256(text) {
-  const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-}
-
-async function sha512(text) {
-  const msgUint8 = new TextEncoder().encode(text);
-  const hashBuffer = await crypto.subtle.digest('SHA-512', msgUint8);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex;
-}
 
 /////////
 // MD5 //
